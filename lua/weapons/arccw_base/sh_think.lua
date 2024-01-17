@@ -9,12 +9,12 @@ local issingleplayer = game.SinglePlayer()
 
 -- local lastUBGL = 0
 function SWEP:Think()
-    if IsValid(self:GetOwner()) and self:GetClass() == "arccw_base" then
+    local owner = self:GetOwner()
+
+    if IsValid(owner) and self:GetClass() == "arccw_base" then
         self:Remove()
         return
     end
-
-    local owner = self:GetOwner()
 
     if !IsValid(owner) or owner:IsNPC() then return end
 
@@ -41,7 +41,7 @@ function SWEP:Think()
     end
 
     if CLIENT and (!issingleplayer and IsFirstTimePredicted() or true)
-            and self:GetOwner() == LocalPlayer() and ArcCW.InvHUD
+            and owner == LocalPlayer() and ArcCW.InvHUD
             and !ArcCW.Inv_Hidden and ArcCW.Inv_Fade == 0 then
         ArcCW.InvHUD:Remove()
         ArcCW.Inv_Fade = 0.01
@@ -264,7 +264,7 @@ function SWEP:Think()
         -- end
     -- end
 
-    for i, k in pairs(self.Attachments) do
+    for i, k in ipairs(self.Attachments) do
         if !k.Installed then continue end
         local atttbl = ArcCW.AttachmentTable[k.Installed]
 
@@ -318,16 +318,17 @@ function SWEP:Think()
         self:PlayIdleAnimation(true)
     end
 
-    if self:GetUBGLDebounce() and !self:GetOwner():KeyDown(IN_RELOAD) then
+    if self:GetUBGLDebounce() and !owner:KeyDown(IN_RELOAD) then
         self:SetUBGLDebounce( false )
     end
 end
 
 local lst = SysTime()
+local timescalecvar = GetConVar("host_timescale")
 
 function SWEP:ProcessRecoil()
     local owner = self:GetOwner()
-    local ft = (SysTime() - (lst or SysTime())) * GetConVar("host_timescale"):GetFloat()
+    local ft = (SysTime() - (lst or SysTime())) * timescalecvar:GetFloat()
     local newang = owner:EyeAngles()
     -- local r = self.RecoilAmount -- self:GetNWFloat("recoil", 0)
     -- local rs = self.RecoilAmountSide -- self:GetNWFloat("recoilside", 0)

@@ -66,6 +66,7 @@ local lastinfo = {ammo = 0, clip = 0, firemode = "", plus = 0}
 local lastinfotime = 0
 
 function SWEP:GetHUDData()
+    local capacity = self:GetCapacity()
     local data = {
         clip = math.Round(vclip or self:Clip1()),
         ammo = math.Round(vreserve or self:Ammo1()),
@@ -80,16 +81,16 @@ function SWEP:GetHUDData()
         heat_locked         = self:GetHeatLocked(),
     }
 
-    if data.clip > self:GetCapacity() then
-        data.plus = data.clip - self:GetCapacity()
-        data.clip = self:GetCapacity()
+    if data.clip > capacity then
+        data.plus = data.clip - capacity
+        data.clip = capacity
     end
 
     local infammo, btmless = self:HasInfiniteAmmo(), self:HasBottomlessClip()
     data.infammo = infammo
     data.btmless = btmless
 
-    if self.PrimaryBash or self:Clip1() == -1 or self:GetCapacity() == 0 or self.Primary.ClipSize == -1 then
+    if self.PrimaryBash or self:Clip1() == -1 or capacity == 0 or self.Primary.ClipSize == -1 then
         data.clip = "-"
     end
     if self.PrimaryBash then
@@ -101,12 +102,15 @@ function SWEP:GetHUDData()
 
         local ubglammo = self:GetBuff_Override("UBGL_Ammo")
         if ubglammo then
-            data.ammo2 = tostring(math.Round(vreserve2 or self:GetOwner():GetAmmoCount(ubglammo)))
+            local owner = self:GetOwner()
+            data.ammo2 = tostring(math.Round(vreserve2 or owner:GetAmmoCount(ubglammo)))
+            data.ubgl = self:Clip2() + owner:GetAmmoCount(ubglammo)
         end
 
-        if data.clip2 > self:GetBuff_Override("UBGL_Capacity") then
-            data.plus2 = (data.clip2 - self:GetBuff_Override("UBGL_Capacity"))
-            data.clip2 = self:GetBuff_Override("UBGL_Capacity")
+        local ubglcapacity = self:GetBuff_Override("UBGL_Capacity")
+        if data.clip2 > ubglcapacity then
+            data.plus2 = (data.clip2 - ubglcapacity)
+            data.clip2 = ubglcapacity
         end
     end
 
@@ -118,11 +122,6 @@ function SWEP:GetHUDData()
         if btmless then
             data.clip = infammo and "∞" or data.ammo
             data.ammo = "-"
-        end
-
-        local ubglammo = self:GetBuff_Override("UBGL_Ammo")
-        if ubglammo then
-            data.ubgl = self:Clip2() + self:GetOwner():GetAmmoCount(ubglammo)
         end
     end
 
@@ -352,6 +351,8 @@ local function debug_panel(self)
     end end
 end
 
+local drawhudcvar = GetConVar("cl_drawhud")
+
 function SWEP:DrawHUD()
     if ArcCW.ConVars["dev_debug"]:GetBool() then
         debug_panel(self)
@@ -362,7 +363,7 @@ function SWEP:DrawHUD()
         draw.SimpleTextOutlined("VIEWMODEL POSITION MOVED", "ArcCW_16", ScrW() / 2, ScreenScaleMulti(30), color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 2, Color(0, 0, 0))
     end
 
-    if !GetConVar("cl_drawhud"):GetBool() then return false end
+    if !drawhudcvar:GetBool() then return false end
 
     if self:GetState() != ArcCW.STATE_CUSTOMIZE then
         self:GetBuff_Hook("Hook_DrawHUD")
@@ -392,7 +393,7 @@ function SWEP:DrawHUD()
     local fmbars = ArcCW.ConVars["hud_fcgbars"]:GetBool() and string.len( self:GetFiremodeBars() or "-----" ) != 0
 
     if ArcCW:ShouldDrawHUDElement("CHudAmmo") then
-        local decaytime = GetConVar("arccw_hud_3dfun_decaytime"):GetFloat()
+        local decaytime = ArcCW.ConVars["hud_3dfun_decaytime"]:GetFloat()
         if decaytime == 0 then decaytime = math.huge end
         local visible = (lastinfotime + decaytime + 1 > curTime or lastinfotime - 0.5 > curTime)
 
@@ -411,7 +412,7 @@ function SWEP:DrawHUD()
             self:GetInBipod(),
             self:CanBipod(),
         }
-        if GetConVar("arccw_hud_3dfun_lite"):GetBool() then
+        if ArcCW.ConVars["hud_3dfun_lite"]:GetBool() then
             curInfo.clip = nil
             curInfo.plus = nil
             curInfo.clip2 = nil
@@ -425,15 +426,16 @@ function SWEP:DrawHUD()
                 break
             end
         end
+        --[[
         local qss = ScreenScaleMulti(24)
         local correct_y = 28
         local correct_x = 0
-        if !GetConVar("arccw_hud_3dfun"):GetBool() then
+        if !ArcCW.ConVars["hud_3dfun"]:GetBool() then
             qss = ScreenScaleMulti(-24)
             correct_y = -36
             correct_x = 52
         end
-
+        ]]
         -- TODO: There's an issue where this won't ping the HUD when switching in from non-ArcCW weapons
         if LocalPlayer():KeyDown(IN_RELOAD) or lastwpn != self then lastinfotime = visible and (curTime - 0.5) or curTime end
 
@@ -447,11 +449,11 @@ function SWEP:DrawHUD()
         end
 
         if alpha > 0 then
-
+            local is3dfun = ArcCW.ConVars["hud_3dfun"]:GetBool()
             local EyeAng = EyeAngles()
 
             local angpos
-            if GetConVar("arccw_hud_3dfun"):GetBool() and self:GetOwner():ShouldDrawLocalPlayer() then
+            if is3dfun and self:GetOwner():ShouldDrawLocalPlayer() then
                 local bone = "ValveBiped.Bip01_R_Hand"
                 local ind = self:GetOwner():LookupBone(bone)
 
@@ -459,7 +461,7 @@ function SWEP:DrawHUD()
                     local p, a = self:GetOwner():GetBonePosition(ind)
                     angpos = {Ang = a, Pos = p}
                 end
-            elseif GetConVar("arccw_hud_3dfun"):GetBool() then
+            elseif is3dfun then
                 local vm = self:GetOwner():GetViewModel()
 
                 if vm and vm:IsValid() then
@@ -467,9 +469,9 @@ function SWEP:DrawHUD()
                 end
             end
 
-            if GetConVar("arccw_hud_3dfun"):GetBool() and angpos then
+            if is3dfun and angpos then
 
-                angpos.Pos = angpos.Pos - EyeAng:Up() * GetConVar("arccw_hud_3dfun_up"):GetFloat() - EyeAng:Right() * GetConVar("arccw_hud_3dfun_right"):GetFloat() - EyeAng:Forward() * GetConVar("arccw_hud_3dfun_forward"):GetFloat()
+                angpos.Pos = angpos.Pos - EyeAng:Up() * ArcCW.ConVars["hud_3dfun_up"]:GetFloat() - EyeAng:Right() * ArcCW.ConVars["hud_3dfun_right"]:GetFloat() - EyeAng:Forward() * ArcCW.ConVars["hud_3dfun_forward"]:GetFloat()
                 cam.Start3D()
                     local toscreen = angpos.Pos:ToScreen()
                 cam.End3D()
@@ -561,7 +563,7 @@ function SWEP:DrawHUD()
                 wreserve.w, wreserve.h = surface.GetTextSize(wreserve.text)
             end
 
-            if GetConVar("arccw_hud_3dfun_ammotype"):GetBool() and isstring(data.ammotype) then
+            if ArcCW.ConVars["hud_3dfun_ammotype"]:GetBool() and isstring(data.ammotype) then
                 local wammotype = {
                     x = wammo.x - wammo.w - ScreenScaleMulti(3),
                     y = wammo.y + (wammo.h/2),
@@ -652,10 +654,10 @@ function SWEP:DrawHUD()
                     wreserve.w, wreserve.h = surface.GetTextSize(wreserve.text)
                 end
 
-                if GetConVar("arccw_hud_3dfun_ammotype"):GetBool() and isstring(data.ammotype) then
+                if ArcCW.ConVars["hud_3dfun_ammotype"]:GetBool() and isstring(data.ammotype) then
                     local wammotype = {
                         x = wammo.x - wammo.w - ScreenScaleMulti(3),
-                        y = wammo.y + (wammo.h/2),
+                        y = wammo.y + (wammo.h / 2),
                         text = language.GetPhrase(data.ammotype2 .. "_ammo"),
                         font = "ArcCW_8",
                         col = col2,
@@ -695,7 +697,7 @@ function SWEP:DrawHUD()
 
                 local wheat = { --cheeeeerios
                     x = apan_bg.x + apan_bg.w - airgap,
-                    y = wmode.y + ScreenScaleMulti(16) * ( !GetConVar("arccw_hud_3dfun"):GetBool() and -2.5 or 1 ),
+                    y = wmode.y + ScreenScaleMulti(16) * ( !is3dfun and -2.5 or 1 ),
                     font = "ArcCW_12",
                     text = translate("ui.jammed"),
                     col = col,
@@ -704,7 +706,7 @@ function SWEP:DrawHUD()
                     alpha = alpha,
                 }
                 if fmbars then
-                    wheat.y = wmode.y + ScreenScaleMulti(16) * ( !GetConVar("arccw_hud_3dfun"):GetBool() and -2.5 or 0.8 )
+                    wheat.y = wmode.y + ScreenScaleMulti(16) * ( !is3dfun and -2.5 or 0.8 )
                 end
                 if ungl then
                     wheat.y = wheat.y - ScreenScaleMulti(24)
@@ -731,7 +733,7 @@ function SWEP:DrawHUD()
 
                 local wheat = {
                     x = apan_bg.x + apan_bg.w - airgap,
-                    y = wmode.y + ScreenScaleMulti(16) * ( !GetConVar("arccw_hud_3dfun"):GetBool() and -2.5 or 1 ),
+                    y = wmode.y + ScreenScaleMulti(16) * ( !is3dfun and -2.5 or 1 ),
                     font = "ArcCW_12",
                     text = data.heat_name .. " " .. tostring(math.floor(100 * data.heat_level / data.heat_maxlevel)) .. "%",
                     col = colheat1,
@@ -740,7 +742,7 @@ function SWEP:DrawHUD()
                     alpha = alpha,
                 }
                 if fmbars then
-                    wheat.y = wmode.y + ScreenScaleMulti(16) * ( !GetConVar("arccw_hud_3dfun"):GetBool() and -2.5 or 0.8 )
+                    wheat.y = wmode.y + ScreenScaleMulti(16) * ( !is3dfun and -2.5 or 0.8 )
                 end
                 if ungl then
                     wheat.y = wheat.y - ScreenScaleMulti(24)

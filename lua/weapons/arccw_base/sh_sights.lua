@@ -437,7 +437,9 @@ function SWEP:QuickFOVix( fov )
     return ScaleFOVByWidthRatio( fov, (ScrW and ScrW() or 4)/(ScrH and ScrH() or 3)/(4/3) )
 end
 
+local fovcvar = GetConVar("fov_desired")
 SWEP.LastTranslateFOV = 0
+
 function SWEP:TranslateFOV(fov)
     local irons = self:GetActiveSights()
 
@@ -453,7 +455,7 @@ function SWEP:TranslateFOV(fov)
 
     local app_vm = self.ViewModelFOV + self:GetOwner():GetInfoNum("arccw_vm_fov", 0)
     if CLIENT then
-        app_vm = app_vm * (LocalPlayer():GetFOV()/GetConVar("fov_desired"):GetInt())
+        app_vm = app_vm * (LocalPlayer():GetFOV() / fovcvar:GetInt())
     end
 
     if self:GetState() == ArcCW.STATE_SIGHTS then
@@ -464,13 +466,13 @@ function SWEP:TranslateFOV(fov)
 
         if CLIENT then
             local addads = math.Clamp(ArcCW.ConVars["vm_add_ads"]:GetFloat() or 0, -2, 14)
-            local csratio = math.Clamp(GetConVar("arccw_cheapscopesv2_ratio"):GetFloat() or 0, 0, 1)
-            local pfov = GetConVar("fov_desired"):GetInt()
+            local csratio = math.Clamp(ArcCW.ConVars["cheapscopesv2_ratio"]:GetFloat() or 0, 0, 1)
+            local pfov = fovcvar:GetInt()
 
             if ArcCW.ConVars["cheapscopes"]:GetBool() and mag > 1 then
                 fov = (pfov / (asight and asight.Magnification or 1)) / (mag / (1 + csratio * mag) + (addads or 0) / 3)
             else
-                fov = ( (pfov / (asight and asight.Magnification or 1)) * (1 - delta)) + (GetConVar("fov_desired"):GetInt() * delta)
+                fov = ( (pfov / (asight and asight.Magnification or 1)) * (1 - delta)) + (pfov * delta)
             end
 
             app_vm = irons.ViewModelFOV or 45

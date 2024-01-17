@@ -54,8 +54,9 @@ local procdraw_ang = Angle(-70, 30, 0)
 local prochol_ang = Angle(-70, 30, 10)
 
 local lst = SysTime()
+local timescalecvar = GetConVar("host_timescale")
 local function scrunkly()
-    local ret = (SysTime() - (lst or SysTime())) * GetConVar("host_timescale"):GetFloat()
+    local ret = (SysTime() - (lst or SysTime())) * timescalecvar:GetFloat()
     return ret
 end
 
@@ -88,7 +89,7 @@ local function LerpMod2(from, usrobj, dlt, clamp_ang)
 end
 
 -- debug for testing garbage count
--- TODO: comment this out or something before actually going into main branch
+--[[
 local sw = false
 local tries = {}
 local totaltries = 1000
@@ -121,7 +122,7 @@ local function stopwatch(name)
     end
     sw_start = gb
 end
-
+]]
 function SWEP:Move_Process(EyePos, EyeAng, velocity)
     local VMPos, VMAng = self.VMPos, self.VMAng
     local VMPosOffset, VMAngOffset = self.VMPosOffset, self.VMAngOffset
@@ -263,13 +264,13 @@ function SWEP:GetVMPosition(EyePos, EyeAng)
     local velocity = self:GetOwner():GetVelocity()
     velocity = WorldToLocal(velocity, angle_zero, vector_origin, EyeAng)
     self:Move_Process(EyePos, EyeAng, velocity)
-    stopwatch("Move_Process")
+    -- stopwatch("Move_Process")
     self:Step_Process(EyePos, EyeAng, velocity)
-    stopwatch("Step_Process")
+    -- stopwatch("Step_Process")
     self:Breath_Process(EyePos, EyeAng)
-    stopwatch("Breath_Process")
+    -- stopwatch("Breath_Process")
     self:Look_Process(EyePos, EyeAng, velocity)
-    stopwatch("Look_Process")
+    -- stopwatch("Look_Process")
     self.LastEyeAng = EyeAng
     self.LastEyePos = EyePos
     self.LastVelocity = velocity
@@ -302,7 +303,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         end
     end
 
-    stopwatch()
+    -- stopwatch()
 
     local owner = self:GetOwner()
     if !IsValid(owner) or !owner:Alive() then return end
@@ -350,7 +351,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     target.sway = 2
     target.bob = 2
 
-    stopwatch("set")
+    -- stopwatch("set")
 
     if self:InBipod() and self:GetBipodAngle() then
         local bpos = self:GetBuff_Override("Override_InBipodPos", self.InBipodPos)
@@ -376,7 +377,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     end
     if (owner:Crouching() or owner:KeyDown(IN_DUCK)) then target.down = 0 end
 
-    stopwatch("reload, crouch, bipod")
+    -- stopwatch("reload, crouch, bipod")
 
     target.pos.x = target.pos.x + ArcCW.ConVars["vm_right"]:GetFloat()
     target.pos.y = target.pos.y + ArcCW.ConVars["vm_forward"]:GetFloat()
@@ -404,7 +405,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         end
     end
 
-    stopwatch("cust")
+    -- stopwatch("cust")
 
     -- Sprinting
     local hpos, spos = self:GetBuff("HolsterPos", true), self:GetBuff("SprintPos", true)
@@ -441,7 +442,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.bob = target.bob * f_lerp(sd, 1, fu_sprint and 0 or 2)
     end
 
-    stopwatch("sprint")
+    -- stopwatch("sprint")
 
     -- Sighting
     if asight then
@@ -475,7 +476,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.bob = target.bob * f_lerp(delta, 0.1, 1)
     end
 
-    stopwatch("sight")
+    -- stopwatch("sight")
 
     local deg = self:GetBarrelNearWall()
     if deg > 0 and ArcCW.ConVars["vm_nearwall"]:GetBool() then
@@ -539,7 +540,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         end
     end
 
-    stopwatch("proc")
+    -- stopwatch("proc")
 
     -- local gunbone, gbslot = self:GetBuff_Override("LHIK_GunDriver")
     -- if gunbone and IsValid(self.Attachments[gbslot].VElement.Model) and self.LHIKGunPos and self.LHIKGunAng then
@@ -583,7 +584,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.pos:Add(VectorRand() * self.RecoilAmount * 0.2 * self.RecoilVMShake)
     end
 
-    stopwatch("vmhit")
+    -- stopwatch("vmhit")
 
     local speed = 15 * FT * (issingleplayer and 1 or 2)
 
@@ -599,7 +600,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     ApproachMod(actual.ang, target.ang, speed * 0.1)
     actual.down = m_appor(actual.down, target.down, speed * 0.1)
 
-    stopwatch("actual -> target")
+    -- stopwatch("actual -> target")
 
     local coolsway = ArcCW.ConVars["vm_coolsway"]:GetBool()
     self.SwayScale = (coolsway and 0) or actual.sway
@@ -621,7 +622,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         swayzmult = Lerp(sd, 0, swayzmult)
         swayspeed = Lerp(sd, 0, swayspeed)
 
-        stopwatch("before vmposition")
+        -- stopwatch("before vmposition")
         local npos, nang = self:GetVMPosition(oldpos, oldang)
         pos:Set(npos)
         ang:Set(nang)
@@ -695,9 +696,9 @@ function SWEP:GetViewModelPosition(pos, ang)
 
     self.ActualVMData = actual
 
-    stopwatch("apply actual")
+    -- stopwatch("apply actual")
 
-    stopwatch(true)
+    -- stopwatch(true)
 
     lst = SysTime()
     return pos, ang

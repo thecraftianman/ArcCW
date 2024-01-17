@@ -26,14 +26,19 @@ hook.Add("PreDrawViewModels", "ArcCW_PreDrawViewmodels_Grad", function()
     end
 end)
 
+local curgamemode = engine.ActiveGamemode()
+
 hook.Add("HUDShouldDraw", "ArcCW_HideHUD", function(name)
     if !hide[name] then return end
-    if !LocalPlayer():IsValid() then return end
-    if !LocalPlayer():GetActiveWeapon().ArcCW then return end
+
+    local ply = LocalPlayer()
+
+    if !ply:IsValid() then return end
+    if !ply:GetActiveWeapon().ArcCW then return end
     if ArcCW.ConVars["override_hud_off"]:GetBool() then return end
     if ArcCW.PollingDefaultHUDElements then return end
     if ArcCW.HUDElementConVars[name] and ArcCW.HUDElementConVars[name]:GetBool() == false then return end
-    if engine.ActiveGamemode() == "terrortown" then return end
+    if curgamemode == "terrortown" then return end
 
     return false
 end)
@@ -52,13 +57,14 @@ hook.Add("RenderScreenspaceEffects", "ArcCW_ToyTown", function()
     end
 end)
 
+local drawhudcvar = GetConVar("cl_drawhud")
 ArcCW.PollingDefaultHUDElements = false
 
 function ArcCW:ShouldDrawHUDElement(ele)
-    if !GetConVar("cl_drawhud"):GetBool() then return false end
+    if !drawhudcvar:GetBool() then return false end
     if ArcCW.ConVars["override_hud_off"]:GetBool() then return false end
 
-    if engine.ActiveGamemode() == "terrortown" and (ele != "CHudAmmo") then return false end
+    if curgamemode == "terrortown" and (ele != "CHudAmmo") then return false end
 
     if ArcCW.HUDElementConVars[ele] and !ArcCW.HUDElementConVars[ele]:GetBool() then
         return false

@@ -106,15 +106,17 @@ function SWEP:ChangeFiremode(pred)
 end
 
 function SWEP:GetCurrentFiremode()
+    local fm = self:GetFireMode()
     local fmt = self:GetBuff_Override("Override_Firemodes", self.Firemodes)
     fmt.BaseClass = nil
 
-    if self:GetFireMode() > table.Count(fmt) or self:GetFireMode() < 1 then
+    if fm > table.Count(fmt) or fm < 1 then
         self:SetFireMode(1)
+        fm = 1
     end
 
-    fmt[self:GetFireMode()].BaseClass = nil
-    return fmt[self:GetFireMode()]
+    fmt[fm].BaseClass = nil
+    return fmt[fm]
 end
 
 function SWEP:GetFiremodeName()

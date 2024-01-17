@@ -724,10 +724,10 @@ function SWEP:DrawCustomModel(wm, origin, angle)
     local disttoeye = self:GetPos():DistToSqr(EyePos())
     local visibility = math.pow(ArcCW.ConVars["visibility"]:GetInt(), 2)
     local always = false
-    if ArcCW.ConVars["visibility"]:GetInt() < 0 or self:GetOwner() == LocalPlayer() then
+    if ArcCW.ConVars["visibility"]:GetInt() < 0 or owner == LocalPlayer() then
         always = true
     end
-    local models = self.VM
+    local models
     local vm
 
     if origin and !angle then
@@ -846,7 +846,7 @@ function SWEP:DrawCustomModel(wm, origin, angle)
         local bpos, bang
         local offset = k.OffsetPos
 
-        if k.IsBaseWM and !IsValid(self:GetOwner()) then
+        if k.IsBaseWM and !IsValid(owner) then
             bpos = self:GetPos()
             bang = self:GetAngles()
         elseif bonename then

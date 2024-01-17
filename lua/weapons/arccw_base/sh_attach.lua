@@ -152,17 +152,24 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil)
     if !self.AttCache_Hooks[buff] then
         self.AttCache_Hooks[buff] = {}
 
-        for i, k in pairs(self.Attachments) do
-            if !k.Installed then continue end
+        local atts = self.Attachments
 
-            local atttbl = ArcCW.AttachmentTable[k.Installed]
+        for i = 1, #atts do
+            local k = atts[i]
+            local installed = k.Installed
+            if !installed then continue end
+
+            local atttbl = ArcCW.AttachmentTable[installed]
 
             if !atttbl then continue end
 
+            local tglstats = atttbl.ToggleStats
+            local tglnum = k.ToggleNum
+
             if isfunction(atttbl[buff]) then
                 table.insert(self.AttCache_Hooks[buff], {atttbl[buff], atttbl[buff .. "_Priority"] or 0})
-            elseif atttbl.ToggleStats and k.ToggleNum and atttbl.ToggleStats[k.ToggleNum] and isfunction(atttbl.ToggleStats[k.ToggleNum][buff]) then
-                table.insert(self.AttCache_Hooks[buff], {atttbl.ToggleStats[k.ToggleNum][buff], atttbl.ToggleStats[k.ToggleNum][buff .. "_Priority"] or 0})
+            elseif tglstats and tglnum and tglstats[tglnum] and isfunction(tglstats[tglnum][buff]) then
+                table.insert(self.AttCache_Hooks[buff], {tglstats[tglnum][buff], tglstats[tglnum][buff .. "_Priority"] or 0})
             end
         end
 
@@ -172,16 +179,20 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil)
             table.insert(self.AttCache_Hooks[buff], {cfm[buff], cfm[buff .. "_Priority"] or 0})
         end
 
-        for i, e in pairs(self:GetActiveElements()) do
-            local ele = self.AttachmentElements[e]
+        local elements = self:GetActiveElements()
+        local attelements = self.AttachmentElements
+
+        for i = 1, #elements do
+            local e = elements[i]
+            local ele = attelements[e]
 
             if ele and ele[buff] then
                 table.insert(self.AttCache_Hooks[buff], {ele[buff], ele[buff .. "_Priority"] or 0})
             end
         end
 
-        if isfunction(self:GetTable()[buff]) then
-            table.insert(self.AttCache_Hooks[buff], {self:GetTable()[buff], self:GetTable()[buff .. "_Priority"] or 0})
+        if isfunction(self[buff]) then
+            table.insert(self.AttCache_Hooks[buff], {self[buff], self[buff .. "_Priority"] or 0})
         end
 
         table.sort(self.AttCache_Hooks[buff], function(a, b) return a[2] >= b[2] end)shouldsort = true
@@ -256,7 +267,10 @@ function SWEP:GetBuff_Override(buff, default)
         end
     end
 
-    for i, k in pairs(self.Attachments) do
+    local atts = self.Attachments
+
+    for i = 1, #atts do
+        local k = atts[i]
         if !k.Installed then continue end
 
         local atttbl = ArcCW.AttachmentTable[k.Installed]
@@ -569,30 +583,35 @@ end
 SWEP.ActiveElementCache = nil
 
 function SWEP:GetActiveElements(recache)
-    if self.ActiveElementCache and !recache then return self.ActiveElementCache end
-    if ArcCW.Overflow and self.ActiveElementCache then return self.ActiveElementCache end
+    local cache = self.ActiveElementCache
+
+    if cache and !recache then return cache end
+    if ArcCW.Overflow and cache then return cache end
 
     local eles = {}
+    local atts = self.Attachments
 
-    for _, i in pairs(self.Attachments) do
-        if !i.Installed then
-            if i.DefaultEles then
-                table.Add(eles, i.DefaultEles)
+    for i = 1, #atts do
+        local k = atts[i]
+        local installed = k.Installed
+        if !installed then
+            if k.DefaultEles then
+                table.Add(eles, k.DefaultEles)
             end
             continue
         end
 
-        if i.InstalledEles and i.Installed != i.EmptyFallback then
-            table.Add(eles, i.InstalledEles)
+        if k.InstalledEles and installed != k.EmptyFallback then
+            table.Add(eles, k.InstalledEles)
         end
 
-        local atttbl = ArcCW.AttachmentTable[i.Installed]
+        local atttbl = ArcCW.AttachmentTable[installed]
 
         if atttbl.ActivateElements then
             table.Add(eles, atttbl.ActivateElements)
         end
 
-        local num = i.ToggleNum or 1
+        local num = k.ToggleNum or 1
         if atttbl.ToggleStats and atttbl.ToggleStats[num] and (atttbl.ToggleStats[num]["ActivateElements"] != nil) then
             table.Add(eles, atttbl.ToggleStats[num]["ActivateElements"])
             --atttbl.ToggleStats[num][buff]
@@ -606,7 +625,7 @@ function SWEP:GetActiveElements(recache)
 
         table.Add(eles, slots or {})
 
-        table.insert(eles, i.Installed)
+        table.insert(eles, installed)
     end
 
     table.Add(eles, self.DefaultElements)
@@ -615,11 +634,12 @@ function SWEP:GetActiveElements(recache)
     table.Add(eles, (mode or {}).ActivateElements or {})
 
     local eles2 = {}
+    local atteles = self.AttachmentElements
 
     ArcCW.Overflow = true
 
     for f, i in pairs(eles) do
-        local e = self.AttachmentElements[i]
+        local e = atteles[i]
 
         if !e then continue end
 
@@ -708,13 +728,13 @@ function SWEP:CheckFlags(reject, need)
     if !istable(need) then need = {need} end
 
     for _, i in pairs(reject) do
-        if table.HasValue(flags, i) then
+        if flags[i] then
             return false
         end
     end
 
     for _, i in pairs(need) do
-        if !table.HasValue(flags, i) then
+        if !flags[i] then
             return false
         end
     end
@@ -724,10 +744,14 @@ end
 
 function SWEP:GetWeaponFlags()
     local flags = {}
+    local defflags = self.DefaultFlags
 
-    if self.DefaultFlags then table.Add(flags, self.DefaultFlags) end
+    if defflags then table.Add(flags, defflags) end
 
-    for id, i in pairs(self.Attachments) do
+    local atts = self.Attachments
+
+    for id = 1, #atts do
+        local i = atts[id]
         if !i.Installed then
             if i.DefaultFlags then
                 table.Add(flags, i.DefaultFlags)
