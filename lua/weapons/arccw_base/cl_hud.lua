@@ -352,6 +352,8 @@ local function debug_panel(self)
 end
 
 local drawhudcvar = GetConVar("cl_drawhud")
+local col2 = Color(255, 255, 255, 255)
+local col3 = Color(255, 0, 0, 255)
 
 function SWEP:DrawHUD()
     if ArcCW.ConVars["dev_debug"]:GetBool() then
@@ -365,12 +367,11 @@ function SWEP:DrawHUD()
 
     if !drawhudcvar:GetBool() then return false end
 
+    local owner = self:GetOwner()
+
     if self:GetState() != ArcCW.STATE_CUSTOMIZE then
         self:GetBuff_Hook("Hook_DrawHUD")
     end
-
-    local col2 = Color(255, 255, 255, 255)
-    local col3 = Color(255, 0, 0, 255)
 
     local airgap = ScreenScaleMulti(8)
 
@@ -453,16 +454,16 @@ function SWEP:DrawHUD()
             local EyeAng = EyeAngles()
 
             local angpos
-            if is3dfun and self:GetOwner():ShouldDrawLocalPlayer() then
+            if is3dfun and owner:ShouldDrawLocalPlayer() then
                 local bone = "ValveBiped.Bip01_R_Hand"
-                local ind = self:GetOwner():LookupBone(bone)
+                local ind = owner:LookupBone(bone)
 
                 if ind and ind > -1 then
-                    local p, a = self:GetOwner():GetBonePosition(ind)
+                    local p, a = owner:GetBonePosition(ind)
                     angpos = {Ang = a, Pos = p}
                 end
             elseif is3dfun then
-                local vm = self:GetOwner():GetViewModel()
+                local vm = owner:GetViewModel()
 
                 if vm and vm:IsValid() then
                     angpos = vm:GetAttachment(muzz)
@@ -566,7 +567,7 @@ function SWEP:DrawHUD()
             if ArcCW.ConVars["hud_3dfun_ammotype"]:GetBool() and isstring(data.ammotype) then
                 local wammotype = {
                     x = wammo.x - wammo.w - ScreenScaleMulti(3),
-                    y = wammo.y + (wammo.h/2),
+                    y = wammo.y + (wammo.h / 2),
                     text = language.GetPhrase(data.ammotype .. "_ammo"),
                     font = "ArcCW_8",
                     col = col2,
@@ -590,7 +591,7 @@ function SWEP:DrawHUD()
                 local ugap = 22 * (1-vubgl)
 
                 local wammo = {
-                    x = apan_bg.x + apan_bg.w - airgap + ScreenScaleMulti(corny*-1),
+                    x = apan_bg.x + apan_bg.w - airgap + ScreenScaleMulti(corny * -1),
                     y = apan_bg.y - ScreenScaleMulti(4) - ScreenScaleMulti(ugap),
                     text = tostring(data.clip2),
                     font = "ArcCW_26",
@@ -809,7 +810,10 @@ function SWEP:DrawHUD()
             }
             ]]
 
-            for k, v in pairs(self.Attachments) do
+            local atts = self.Attachments
+
+            for k = 1, #atts do
+                local v = atts[k]
                 local atttbl = v.Installed and ArcCW.AttachmentTable[v.Installed]
                 if atttbl and atttbl.ToggleStats then-- and !v.ToggleLock then
                     --print(atttbl.PrintName)
@@ -1127,8 +1131,8 @@ function SWEP:DrawHUD()
 
     end
 
-    vhp = self:GetOwner():Health()
-    varmor = self:GetOwner():Armor()
+    vhp = owner:Health()
+    varmor = owner:Armor()
 
     local clipdiff = math.abs(vclip - self:Clip1())
     local reservediff = math.abs(vreserve - self:Ammo1())
@@ -1143,8 +1147,8 @@ function SWEP:DrawHUD()
     vreserve = math.Approach(vreserve, self:Ammo1(), FrameTime() * 30 * reservediff)
 
     do
-        local clipdiff = math.abs(vclip2 - self:Clip2())
-        local reservediff = math.abs(vreserve2 - self:Ammo2())
+        clipdiff = math.abs(vclip2 - self:Clip2())
+        reservediff = math.abs(vreserve2 - self:Ammo2())
 
         if clipdiff == 1 then
             vclip2 = self:Clip2()
@@ -1156,7 +1160,7 @@ function SWEP:DrawHUD()
         vreserve2 = math.Approach(vreserve2, self:Ammo2(), FrameTime() * 30 * reservediff)
     end
 
-    vubgl = math.Approach(vubgl, (self:GetInUBGL() and 1 or 0), (FrameTime() / 0.3) )
+    vubgl = math.Approach(vubgl, self:GetInUBGL() and 1 or 0, FrameTime() / 0.3)
 
     if lastwpn != self then
         vclip = self:Clip1()
@@ -1164,8 +1168,8 @@ function SWEP:DrawHUD()
         vclip2 = self:Clip2()
         vreserve2 = self:Ammo2()
         vubgl = 0
-        vhp = self:GetOwner():Health()
-        varmor = self:GetOwner():Armor()
+        vhp = owner:Health()
+        varmor = owner:Armor()
     end
 
     lastwpn = self
@@ -1173,25 +1177,26 @@ end
 
 function SWEP:CustomAmmoDisplay()
     local data = self:GetHUDData()
-    self.AmmoDisplay = self.AmmoDisplay or {}
+    local disptbl = self.AmmoDisplay or {}
 
-    self.AmmoDisplay.Draw = true -- draw the display?
+    disptbl.Draw = true -- draw the display?
 
     if self.Primary.ClipSize > 0 and tonumber(data.clip) then
         local plus = tonumber(data.plus) or 0
-        self.AmmoDisplay.PrimaryClip = tonumber(data.clip) + plus -- amount in clip
+        disptbl.PrimaryClip = tonumber(data.clip) + plus -- amount in clip
     end
 
     if self.Primary.ClipSize > 0 and tonumber(data.ammo) then
-        self.AmmoDisplay.PrimaryAmmo = tonumber(data.ammo) -- amount in reserve
+        disptbl.PrimaryAmmo = tonumber(data.ammo) -- amount in reserve
     end
 
     if true then
         local ubglammo = self:GetBuff_Override("UBGL_Ammo")
         if ubglammo then
-            self.AmmoDisplay.SecondaryAmmo = self:Clip2() + self:GetOwner():GetAmmoCount(ubglammo) -- amount of secondary ammo
+            disptbl.SecondaryAmmo = self:Clip2() + self:GetOwner():GetAmmoCount(ubglammo) -- amount of secondary ammo
         end
     end
 
-    return self.AmmoDisplay -- return the table
+    self.AmmoDisplay = disptbl
+    return disptbl -- return the table
 end

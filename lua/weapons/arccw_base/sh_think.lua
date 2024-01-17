@@ -26,21 +26,25 @@ function SWEP:Think()
         end
     end
 
-    for i, v in ipairs(self.EventTable) do
+    local curtime = CurTime()
+    local isfirsttimepredicted = IsFirstTimePredicted()
+    local eventtbl = self.EventTable
+
+    for i, v in ipairs(eventtbl) do
         for ed, bz in pairs(v) do
-            if ed <= CurTime() then
+            if ed <= curtime then
                 if bz.AnimKey and (bz.AnimKey != self.LastAnimKey or bz.StartTime != self.LastAnimStartTime) then
                     continue
                 end
                 self:PlayEvent(bz)
-                self.EventTable[i][ed] = nil
+                eventtbl[i][ed] = nil
                 --print(CurTime(), "Event completed at " .. i, ed)
-                if table.IsEmpty(v) and i != 1 then self.EventTable[i] = nil --[[print(CurTime(), "No more events at " .. i .. ", killing")]] end
+                if table.IsEmpty(v) and i != 1 then eventtbl[i] = nil --[[print(CurTime(), "No more events at " .. i .. ", killing")]] end
             end
         end
     end
 
-    if CLIENT and (!issingleplayer and IsFirstTimePredicted() or true)
+    if CLIENT and (!issingleplayer and isfirsttimepredicted or true)
             and owner == LocalPlayer() and ArcCW.InvHUD
             and !ArcCW.Inv_Hidden and ArcCW.Inv_Fade == 0 then
         ArcCW.InvHUD:Remove()
@@ -54,22 +58,24 @@ function SWEP:Think()
     local sg = self:GetShotgunReloading()
     if (sg == 2 or sg == 4) and owner:KeyPressed(IN_ATTACK) then
         self:SetShotgunReloading(sg + 1)
-    elseif (sg >= 2) and self:GetReloadingREAL() <= CurTime() then
+    elseif (sg >= 2) and self:GetReloadingREAL() <= curtime then
         self:ReloadInsert((sg >= 4) and true or false)
     end
 
     self:InBipod()
 
-    if self:GetNeedCycle() and !self.Throwing and !self:GetReloading() and self:GetWeaponOpDelay() < CurTime() and self:GetNextPrimaryFire() < CurTime() and -- Adding this delays bolting if the RPM is too low, but removing it may reintroduce the double pump bug. Increasing the RPM allows you to shoot twice on many multiplayer servers. Sure would be convenient if everything just worked nicely
-            (!ArcCW.ConVars["clicktocycle"]:GetBool() and (self:GetCurrentFiremode().Mode == 2 or !owner:KeyDown(IN_ATTACK))
-            or ArcCW.ConVars["clicktocycle"]:GetBool() and (self:GetCurrentFiremode().Mode == 2 or owner:KeyPressed(IN_ATTACK))) then
+    local firemode = self:GetCurrentFiremode()
+
+    if self:GetNeedCycle() and !self.Throwing and !self:GetReloading() and self:GetWeaponOpDelay() < curtime and self:GetNextPrimaryFire() < curtime and -- Adding this delays bolting if the RPM is too low, but removing it may reintroduce the double pump bug. Increasing the RPM allows you to shoot twice on many multiplayer servers. Sure would be convenient if everything just worked nicely
+            (!ArcCW.ConVars["clicktocycle"]:GetBool() and (firemode.Mode == 2 or !owner:KeyDown(IN_ATTACK))
+            or ArcCW.ConVars["clicktocycle"]:GetBool() and (firemode.Mode == 2 or owner:KeyPressed(IN_ATTACK))) then
         local anim = self:SelectAnimation("cycle")
         anim = self:GetBuff_Hook("Hook_SelectCycleAnimation", anim) or anim
         local mult = self:GetBuff_Mult("Mult_CycleTime")
         local p = self:PlayAnimation(anim, mult, true, 0, true)
         if p then
             self:SetNeedCycle(false)
-            self:SetPriorityAnim(CurTime() + self:GetAnimKeyTime(anim, true) * mult)
+            self:SetPriorityAnim(curtime + self:GetAnimKeyTime(anim, true) * mult)
         end
     end
 
@@ -78,7 +84,7 @@ function SWEP:Think()
     end
 
     if self:GetGrenadePrimed() and self.GrenadePrimeTime > 0 and self.isCooked then
-        local heldtime = (CurTime() - self.GrenadePrimeTime)
+        local heldtime = (curtime - self.GrenadePrimeTime)
 
         local ft = self:GetBuff_Override("Override_FuseTime") or self.FuseTime
 
@@ -87,7 +93,7 @@ function SWEP:Think()
         end
     end
 
-    if IsFirstTimePredicted() and self:GetNextPrimaryFire() < CurTime() and owner:KeyReleased(IN_USE) then
+    if isfirsttimepredicted and self:GetNextPrimaryFire() < curtime and owner:KeyReleased(IN_USE) then
         if self:InBipod() then
             self:ExitBipod()
         else
@@ -103,7 +109,7 @@ function SWEP:Think()
         end
     end
 
-    if self:GetCurrentFiremode().RunawayBurst then
+    if firemode.RunawayBurst then
 
         if self:GetBurstCount() > 0 and ((issingleplayer and SERVER) or (!issingleplayer and true)) then
             self:PrimaryAttack()
@@ -111,7 +117,7 @@ function SWEP:Think()
 
         if self:Clip1() < self:GetBuff("AmmoPerShot") or self:GetBurstCount() == self:GetBurstLength() then
             self:SetBurstCount(0)
-            if !self:GetCurrentFiremode().AutoBurst then
+            if !firemode.AutoBurst then
                 self.Primary.Automatic = false
             end
         end
@@ -119,28 +125,29 @@ function SWEP:Think()
 
     if owner:KeyReleased(IN_ATTACK) then
 
-        if !self:GetCurrentFiremode().RunawayBurst then
+        if !firemode.RunawayBurst then
             self:SetBurstCount(0)
             self.LastTriggerTime = -1 -- Cannot fire again until trigger released
             self.LastTriggerDuration = 0
         end
 
-        if self:GetCurrentFiremode().Mode < 0 and !self:GetCurrentFiremode().RunawayBurst then
-            local postburst = self:GetCurrentFiremode().PostBurstDelay or 0
+        if firemode.Mode < 0 and !firemode.RunawayBurst then
+            local postburst = firemode.PostBurstDelay or 0
 
-            if (CurTime() + postburst) > self:GetWeaponOpDelay() then
-                --self:SetNextPrimaryFire(CurTime() + postburst)
-                self:SetWeaponOpDelay(CurTime() + postburst * self:GetBuff_Mult("Mult_PostBurstDelay") + self:GetBuff_Add("Add_PostBurstDelay"))
+            if (curtime + postburst) > self:GetWeaponOpDelay() then
+                --self:SetNextPrimaryFire(curtime + postburst)
+                self:SetWeaponOpDelay(curtime + postburst * self:GetBuff_Mult("Mult_PostBurstDelay") + self:GetBuff_Add("Add_PostBurstDelay"))
             end
         end
     end
 
-    if owner and owner:GetInfoNum("arccw_automaticreload", 0) == 1 and self:Clip1() == 0 and !self:GetReloading() and CurTime() > self:GetNextPrimaryFire() + 0.2 then
+    if owner and owner:GetInfoNum("arccw_automaticreload", 0) == 1 and self:Clip1() == 0 and !self:GetReloading() and curtime > self:GetNextPrimaryFire() + 0.2 then
         self:Reload()
     end
 
-    if (!(self:GetBuff_Override("Override_ReloadInSights") or self.ReloadInSights) and (self:GetReloading() or owner:KeyDown(IN_RELOAD))) then
-        if !(self:GetBuff_Override("Override_ReloadInSights") or self.ReloadInSights) and self:GetReloading() then
+    local notreloadinsights = !(self:GetBuff_Override("Override_ReloadInSights") or self.ReloadInSights)
+    if (notreloadinsights and (self:GetReloading() or owner:KeyDown(IN_RELOAD))) then
+        if notreloadinsights and self:GetReloading() then
             self:ExitSights()
         end
     end
@@ -179,7 +186,7 @@ function SWEP:Think()
 
     end
 
-    if (!issingleplayer and IsFirstTimePredicted()) or (issingleplayer and true) then
+    if (!issingleplayer and isfirsttimepredicted) or (issingleplayer and true) then
         if self:InSprint() and (self:GetState() != ArcCW.STATE_SPRINT) then
             self:EnterSprint()
         elseif !self:InSprint() and (self:GetState() == ArcCW.STATE_SPRINT) then
@@ -187,12 +194,12 @@ function SWEP:Think()
         end
     end
 
-    if issingleplayer or IsFirstTimePredicted() then
+    if issingleplayer or isfirsttimepredicted then
         self:SetSightDelta(math.Approach(self:GetSightDelta(), self:GetState() == ArcCW.STATE_SIGHTS and 0 or 1, FrameTime() / self:GetSightTime()))
         self:SetSprintDelta(math.Approach(self:GetSprintDelta(), self:GetState() == ArcCW.STATE_SPRINT and 1 or 0, FrameTime() / self:GetSprintTime()))
     end
 
-    if CLIENT and (issingleplayer or IsFirstTimePredicted()) then
+    if CLIENT and (issingleplayer or isfirsttimepredicted) then
         self:ProcessRecoil()
     end
 
@@ -264,7 +271,10 @@ function SWEP:Think()
         -- end
     -- end
 
-    for i, k in ipairs(self.Attachments) do
+    local eles = self.Attachments
+
+    for i = 1, #eles do
+        local k = eles[i]
         if !k.Installed then continue end
         local atttbl = ArcCW.AttachmentTable[k.Installed]
 
@@ -286,7 +296,7 @@ function SWEP:Think()
 
     -- self:RefreshBGs()
 
-    if self:GetMagUpIn() != 0 and CurTime() > self:GetMagUpIn() then
+    if self:GetMagUpIn() != 0 and curtime > self:GetMagUpIn() then
         self:ReloadTimed()
         self:SetMagUpIn( 0 )
     end
@@ -312,7 +322,7 @@ function SWEP:Think()
     --end
 
     -- Only reset to idle if we don't need cycle. empty idle animation usually doesn't play nice
-    if self:GetNextIdle() != 0 and self:GetNextIdle() <= CurTime() and !self:GetNeedCycle()
+    if self:GetNextIdle() != 0 and self:GetNextIdle() <= curtime and !self:GetNeedCycle()
             and self:GetHolster_Time() == 0 and self:GetShotgunReloading() == 0 then
         self:SetNextIdle(0)
         self:PlayIdleAnimation(true)

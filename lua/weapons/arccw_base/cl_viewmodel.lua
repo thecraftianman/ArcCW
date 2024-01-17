@@ -657,9 +657,10 @@ function SWEP:GetViewModelPosition(pos, ang)
     ang:Add(self:GetOurViewPunchAngles() * Lerp(sgtd, 1, -1))
 
     local gunbone, gbslot = self:GetBuff_Override("LHIK_GunDriver")
-    local lhik_model = gbslot and self.Attachments[gbslot].VElement and self.Attachments[gbslot].VElement.Model -- Visual M203 attachment
-    local lhik_anim_model = gbslot and self.Attachments[gbslot].GodDriver and self.Attachments[gbslot].GodDriver.Model -- M203 anim and camera
-    local lhik_refl_model = gbslot and self.Attachments[gbslot].ReflectDriver and self.Attachments[gbslot].ReflectDriver.Model -- Rifle
+    local atts = self.Attachments
+    local lhik_model = gbslot and atts[gbslot].VElement and atts[gbslot].VElement.Model -- Visual M203 attachment
+    local lhik_anim_model = gbslot and atts[gbslot].GodDriver and atts[gbslot].GodDriver.Model -- M203 anim and camera
+    local lhik_refl_model = gbslot and atts[gbslot].ReflectDriver and atts[gbslot].ReflectDriver.Model -- Rifle
     if IsValid(lhik_model) and IsValid(lhik_anim_model) and IsValid(lhik_refl_model) and lhik_anim_model:GetAttachment(lhik_anim_model:LookupAttachment(gunbone)) then
         local att = lhik_anim_model:LookupAttachment(gunbone)
         local offset = lhik_anim_model:GetAttachment(att).Pos
@@ -671,9 +672,9 @@ function SWEP:GetViewModelPosition(pos, ang)
         affset.p = -r
         affset.y = -affset.y
 
-        local anchor = self.Attachments[gbslot].VMOffsetPos
+        local anchor = atts[gbslot].VMOffsetPos
 
-        local looku = lhik_refl_model:LookupBone( self.Attachments[gbslot].Bone )
+        local looku = lhik_refl_model:LookupBone( atts[gbslot].Bone )
         local bonp, bona = lhik_refl_model:GetBonePosition( looku )
         if bonp == lhik_refl_model:GetPos() then
             bonp = lhik_refl_model:GetBoneMatrix( looku ):GetTranslation()
@@ -681,7 +682,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         end
 
         if anchor and bonp then -- Not ready / deploying
-            anchor = ( bonp + ( (bona:Forward()*anchor.x) + (bona:Right()*anchor.y) + (bona:Up()*anchor.z) ) )
+            anchor = ( bonp + ( (bona:Forward() * anchor.x) + (bona:Right() * anchor.y) + (bona:Up() * anchor.z) ) )
 
             debugoverlay.Axis(anchor, angle_zero, 4, FrameTime(), true)
 
@@ -706,8 +707,9 @@ end
 
 function SWEP:ShouldCheapWorldModel()
     local lp = LocalPlayer()
-    if lp:GetObserverMode() == OBS_MODE_IN_EYE and lp:GetObserverTarget() == self:GetOwner() then return true end
-    if !IsValid(self:GetOwner()) and !ArcCW.ConVars["att_showground"]:GetBool() then return true end
+    local owner = self:GetOwner()
+    if lp:GetObserverMode() == OBS_MODE_IN_EYE and lp:GetObserverTarget() == owner then return true end
+    if !IsValid(owner) and !ArcCW.ConVars["att_showground"]:GetBool() then return true end
 
     return !ArcCW.ConVars["att_showothers"]:GetBool()
 end

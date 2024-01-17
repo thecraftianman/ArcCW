@@ -148,9 +148,10 @@ end
 
 function SWEP:GetBuff_Hook(buff, data, defaultnil)
     -- call through hook function, args = data. return nil to do nothing. return false to prevent thing from happening.
+    local hooks = self.AttCache_Hooks
 
-    if !self.AttCache_Hooks[buff] then
-        self.AttCache_Hooks[buff] = {}
+    if !hooks[buff] then
+        hooks[buff] = {}
 
         local atts = self.Attachments
 
@@ -167,39 +168,40 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil)
             local tglnum = k.ToggleNum
 
             if isfunction(atttbl[buff]) then
-                table.insert(self.AttCache_Hooks[buff], {atttbl[buff], atttbl[buff .. "_Priority"] or 0})
+                table.insert(hooks[buff], {atttbl[buff], atttbl[buff .. "_Priority"] or 0})
             elseif tglstats and tglnum and tglstats[tglnum] and isfunction(tglstats[tglnum][buff]) then
-                table.insert(self.AttCache_Hooks[buff], {tglstats[tglnum][buff], tglstats[tglnum][buff .. "_Priority"] or 0})
+                table.insert(hooks[buff], {tglstats[tglnum][buff], tglstats[tglnum][buff .. "_Priority"] or 0})
             end
         end
 
         local cfm = self:GetCurrentFiremode()
 
         if cfm and isfunction(cfm[buff]) then
-            table.insert(self.AttCache_Hooks[buff], {cfm[buff], cfm[buff .. "_Priority"] or 0})
+            table.insert(hooks[buff], {cfm[buff], cfm[buff .. "_Priority"] or 0})
         end
 
-        local elements = self:GetActiveElements()
-        local attelements = self.AttachmentElements
+        local eles = self:GetActiveElements()
+        local atteles = self.AttachmentElements
 
-        for i = 1, #elements do
-            local e = elements[i]
-            local ele = attelements[e]
+        for i = 1, #eles do
+            local e = eles[i]
+            local ele = atteles[e]
 
             if ele and ele[buff] then
-                table.insert(self.AttCache_Hooks[buff], {ele[buff], ele[buff .. "_Priority"] or 0})
+                table.insert(hooks[buff], {ele[buff], ele[buff .. "_Priority"] or 0})
             end
         end
 
         if isfunction(self[buff]) then
-            table.insert(self.AttCache_Hooks[buff], {self[buff], self[buff .. "_Priority"] or 0})
+            table.insert(hooks[buff], {self[buff], self[buff .. "_Priority"] or 0})
         end
 
-        table.sort(self.AttCache_Hooks[buff], function(a, b) return a[2] >= b[2] end)shouldsort = true
+        table.sort(hooks[buff], function(a, b) return a[2] >= b[2] end)
+        shouldsort = true
     end
 
     local retvalue = nil
-    for i, k in ipairs(self.AttCache_Hooks[buff]) do
+    for i, k in ipairs(hooks[buff]) do
         local ret = k[1](self, data)
         if ret == false then
             return
@@ -237,9 +239,11 @@ function SWEP:GetBuff_Override(buff, default)
         return current or default, winningslot
     end
 
-    if self.TickCache_Overrides[buff] then
-        current = self.TickCache_Overrides[buff][1]
-        winningslot = self.TickCache_Overrides[buff][2]
+    local bufftbl = self.TickCache_Overrides[buff]
+
+    if bufftbl then
+        current = bufftbl[1]
+        winningslot = bufftbl[2]
 
         local data = {
             buff = buff,
@@ -316,10 +320,13 @@ function SWEP:GetBuff_Override(buff, default)
 
     if !ArcCW.BuffStack then
 
+        local eles = self:GetActiveElements()
+        local atteles = self.AttachmentElements
         ArcCW.BuffStack = true
 
-        for i, e in pairs(self:GetActiveElements()) do
-            local ele = self.AttachmentElements[e]
+        for i = 1, #eles do
+            local e = eles[i]
+            local ele = atteles[e]
 
             if ele and ele[buff] != nil then
                 local pri = ele[buff .. "_Priority"] or 1
@@ -335,10 +342,10 @@ function SWEP:GetBuff_Override(buff, default)
 
     end
 
-    if self:GetTable()[buff] != nil then
-        local pri = self:GetTable()[buff .. "_Priority"] or 1
+    if self[buff] != nil then
+        local pri = self[buff .. "_Priority"] or 1
         if level == 0 or (pri > level) then
-            current = self:GetTable()[buff]
+            current = self[buff]
             level = pri
         end
     end
