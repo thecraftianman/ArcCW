@@ -79,7 +79,7 @@ function SWEP:ToggleCustomizeHUD(ic)
 
         if CLIENT then
             self:CloseCustomizeHUD()
-            self:SendAllDetails()
+            -- self:SendAllDetails()
         end
     end
 end
