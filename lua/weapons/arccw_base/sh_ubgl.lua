@@ -1,3 +1,4 @@
+local issingleplayer = game.SinglePlayer()
 
 function SWEP:SelectUBGL()
     if !self:GetBuff_Override("UBGL") then return end
@@ -11,7 +12,7 @@ function SWEP:SelectUBGL()
 
     self:SetFireMode(1)
 
-    if CLIENT and (game.SinglePlayer() or (!game.SinglePlayer() and IsFirstTimePredicted())) then
+    if CLIENT and (issingleplayer or (!issingleplayer and IsFirstTimePredicted())) then
         -- if !ArcCW:ShouldDrawHUDElement("CHudAmmo") then
         --     self:GetOwner():ChatPrint("Selected " .. self:GetBuff_Override("UBGL_PrintName") or "UBGL")
         -- end
@@ -45,7 +46,7 @@ function SWEP:DeselectUBGL()
 
     self:SetInUBGL(false)
 
-    if CLIENT and (game.SinglePlayer() or (!game.SinglePlayer() and IsFirstTimePredicted())) then
+    if CLIENT and (issingleplayer or (!issingleplayer and IsFirstTimePredicted())) then
         -- if !ArcCW:ShouldDrawHUDElement("CHudAmmo") then
         --     self:GetOwner():ChatPrint("Deselected " .. self:GetBuff_Override("UBGL_PrintName") or "UBGL")
         -- end
@@ -68,11 +69,9 @@ function SWEP:DeselectUBGL()
 end
 
 function SWEP:RecoilUBGL()
-    local single = game.SinglePlayer()
+    if !issingleplayer and !IsFirstTimePredicted() then return end
 
-    if !single and !IsFirstTimePredicted() then return end
-
-    if single and self:GetOwner():IsValid() and SERVER then self:CallOnClient("RecoilUBGL") end
+    if issingleplayer and self:GetOwner():IsValid() and SERVER then self:CallOnClient("RecoilUBGL") end
 
     local amt = self:GetBuff_Override("UBGL_Recoil")
     local amtside = self:GetBuff_Override("UBGL_RecoilSide") or (self:GetBuff_Override("UBGL_Recoil") * 0.5)
@@ -95,7 +94,7 @@ function SWEP:RecoilUBGL()
         self:OurViewPunch(vpa)
     end
 
-    if CLIENT or game.SinglePlayer() then
+    if CLIENT or issingleplayer then
 
         self.RecoilAmount = self.RecoilAmount + (amt * m)
         self.RecoilAmountSide = self.RecoilAmountSide + (r * amtside * m * rs)
@@ -152,7 +151,7 @@ end
 if SERVER then
 
 function SWEP:DoLHIKAnimation(key, time)
-    if game.SinglePlayer() then
+    if issingleplayer then
         net.Start("arccw_sp_lhikanim")
         net.WriteString(key)
         net.WriteFloat(time or -1)

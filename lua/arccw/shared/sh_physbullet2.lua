@@ -48,6 +48,7 @@ ArcCW.BulletProfileDict = {
 }
 
 local vector_down = Vector(0, 0, 1)
+local issingleplayer = game.SinglePlayer()
 
 function ArcCW:AddBulletProfile(name, bulinfo)
 
@@ -87,10 +88,10 @@ function ArcCW:SendBullet(bullet, attacker)
     net.WriteBool(bullet.PhysBulletImpact)
     net.WriteEntity(bullet.Weapon)
 
-    if attacker and attacker:IsValid() and attacker:IsPlayer() and !game.SinglePlayer() then
+    if attacker and attacker:IsValid() and attacker:IsPlayer() and !issingleplayer then
         net.SendOmit(attacker)
     else
-        if game.SinglePlayer() then
+        if issingleplayer then
             net.WriteEntity(attacker)
         end
         net.Broadcast()
@@ -200,7 +201,7 @@ net.Receive("arccw_sendbullet", function(len, ply)
     local weapon = net.ReadEntity()
     local ent = nil
 
-    if game.SinglePlayer() then
+    if issingleplayer then
         ent = net.ReadEntity()
     end
 
@@ -381,7 +382,7 @@ function ArcCW:ProgressPhysBullet(bullet, timestep)
 
             if CLIENT then
                 -- do an impact effect and forget about it
-                if !game.SinglePlayer() and bullet.PhysBulletImpact then
+                if !issingleplayer and bullet.PhysBulletImpact then
                     attacker:FireBullets({
                         Src = oldpos,
                         Dir = dir,

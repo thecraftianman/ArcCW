@@ -81,12 +81,14 @@ function SWEP:CanBipod()
     return false
 end
 
+local issingleplayer = game.SinglePlayer()
+
 function SWEP:EnterBipod(sp)
     if !sp and self:GetInBipod() then return end
     local can, tr = self:CanBipod()
     if !sp and !can then return end
 
-    if SERVER and game.SinglePlayer() then self:CallOnClient("EnterBipod", "true") end
+    if SERVER and issingleplayer then self:CallOnClient("EnterBipod", "true") end
 
     if self.Animations.enter_bipod then
         self:PlayAnimation("enter_bipod", nil, nil, 0, true)
@@ -109,7 +111,7 @@ function SWEP:EnterBipod(sp)
     self:SetBipodAngle(bipodang)
     self.BipodStartAngle = self:GetOwner():EyeAngles()
 
-    if game.SinglePlayer() and CLIENT then return end
+    if issingleplayer and CLIENT then return end
 
     self:MyEmitSound(self.EnterBipodSound)
     self:SetInBipod(true)
@@ -118,7 +120,7 @@ end
 function SWEP:ExitBipod(sp)
     if !sp and !self:GetInBipod() then return end
 
-    if SERVER and game.SinglePlayer() then self:CallOnClient("ExitBipod", "true") end
+    if SERVER and issingleplayer then self:CallOnClient("ExitBipod", "true") end
 
     if self.Animations.exit_bipod then
         self:PlayAnimation("exit_bipod", nil, nil, 0, true)
@@ -130,7 +132,7 @@ function SWEP:ExitBipod(sp)
         self:DoLHIKAnimation("exit")
     end
 
-    if game.SinglePlayer() and CLIENT then return end
+    if issingleplayer and CLIENT then return end
 
     self:MyEmitSound(self.ExitBipodSound)
     self:SetInBipod(false)

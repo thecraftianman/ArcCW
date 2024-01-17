@@ -124,6 +124,8 @@ local function ArcCW_LoadFolder(folder)
     end
 end
 
+local issingleplayer = game.SinglePlayer()
+
 local function ArcCW_LoadAtts()
     ArcCW.AttachmentTable = {}
     ArcCW.AttachmentIDTable = {}
@@ -154,7 +156,7 @@ local function ArcCW_LoadAtts()
 
     print("Loaded " .. tostring(ArcCW.NumAttachments) .. " ArcCW attachments.")
 
-    if !game.SinglePlayer() then
+    if !issingleplayer then
         ArcCW_SendBlacklist()
     else
         -- Simply read the file and do no networking, since both client/server has access to it
@@ -213,7 +215,7 @@ if CLIENT then
 
     -- Gets around Listen server spawn issues
     hook.Add( "InitPostEntity", "Ready", function()
-        if !game.SinglePlayer() then
+        if !issingleplayer then
             net.Start("arccw_blacklist")
                 net.WriteBool(true)
             net.SendToServer()

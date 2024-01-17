@@ -15,6 +15,7 @@ local m_appor = mth.Approach
 local m_clamp = mth.Clamp
 local f_lerp = Lerp
 local srf = surface
+local issingleplayer = game.SinglePlayer()
 SWEP.ActualVMData = false
 local swayxmult, swayymult, swayzmult, swayspeed = 1, 1, 1, 1
 local lookxmult, lookymult = 1, 1
@@ -314,8 +315,6 @@ function SWEP:GetViewModelPosition(pos, ang)
         FT = FT * TargetTick
     end
 
-    local vm = LocalPlayer():GetViewModel()
-
     local asight = self:GetActiveSights()
     local state = self:GetState()
     local sgtd = self:GetSightDelta()
@@ -325,7 +324,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     local sighted = self.Sighted or state == ArcCW.STATE_SIGHTS
     local holstered = self:GetCurrentFiremode().Mode == 0
 
-    if game.SinglePlayer() then
+    if issingleplayer then
         sprinted = state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint()
         sighted = state == ArcCW.STATE_SIGHTS
     end
@@ -586,7 +585,7 @@ function SWEP:GetViewModelPosition(pos, ang)
 
     stopwatch("vmhit")
 
-    local speed = 15 * FT * (game.SinglePlayer() and 1 or 2)
+    local speed = 15 * FT * (issingleplayer and 1 or 2)
 
     LerpMod(actual.pos, target.pos, speed)
     LerpMod(actual.ang, target.ang, speed, true)

@@ -49,6 +49,8 @@ function SWEP:PlayAnimationEZ(key, mult, priority)
     return self:PlayAnimation(key, mult, true, 0, false, false, priority, false)
 end
 
+local issingleplayer = game.SinglePlayer()
+
 function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priority, absolute)
     mult = mult or 1
     pred = pred or false
@@ -63,7 +65,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
 
     if self:GetPriorityAnim() and !priority then return end
 
-    if game.SinglePlayer() and SERVER and pred then
+    if issingleplayer and SERVER and pred then
         net.Start("arccw_sp_anim")
         net.WriteString(key)
         net.WriteFloat(mult)
@@ -93,7 +95,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
 
             local st = (v.t * mult) - startfrom
 
-            if isnumber(v.t) and st >= 0 and self:GetOwner():IsPlayer() and (game.SinglePlayer() or IsFirstTimePredicted()) then
+            if isnumber(v.t) and st >= 0 and self:GetOwner():IsPlayer() and (issingleplayer or IsFirstTimePredicted()) then
                 self:SetTimer(st, function() self:OurViewPunch(v.p or Vector(0, 0, 0)) end, id)
             end
         end
@@ -185,7 +187,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
         local aseq = self:GetOwner():SelectWeightedSequence(anim.TPAnim)
         if aseq then
             self:GetOwner():AddVCDSequenceToGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD, aseq, anim.TPAnimStartTime or 0, true )
-            if !game.SinglePlayer() and SERVER then
+            if !issingleplayer and SERVER then
                 net.Start("arccw_networktpanim")
                     net.WriteEntity(self:GetOwner())
                     net.WriteUInt(aseq, 16)
@@ -195,7 +197,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
         end
     end
 
-    if !(game.SinglePlayer() and CLIENT) and (game.SinglePlayer() or IsFirstTimePredicted() or self.ReadySoundTableHack) then
+    if !(issingleplayer and CLIENT) and (issingleplayer or IsFirstTimePredicted() or self.ReadySoundTableHack) then
         self:PlaySoundTable(anim.SoundTable or {}, 1 / mult, startfrom, key)
         self.ReadySoundTableHack = nil
     end

@@ -1,4 +1,4 @@
-
+local issingleplayer = game.SinglePlayer()
 
 function SWEP:GetReloadTime()
     -- Only works with classic mag-fed weapons.
@@ -57,7 +57,7 @@ function SWEP:Reload()
     end
 
     if self:GetNextPrimaryFire() >= CurTime() then return end
-    -- if !game.SinglePlayer() and !IsFirstTimePredicted() then return end
+    -- if !issingleplayer and !IsFirstTimePredicted() then return end
 
 
     if self.Throwing then return end
@@ -172,7 +172,7 @@ function SWEP:Reload()
     end
 
     self:SetClipInfo(load)
-    if game.SinglePlayer() then
+    if issingleplayer then
         self:CallOnClient("SetClipInfo", tostring(load))
     end
 
@@ -354,7 +354,7 @@ end
 function SWEP:ReloadInsert(empty)
     local total = self:GetCapacity()
 
-    -- if !game.SinglePlayer() and !IsFirstTimePredicted() then return end
+    -- if !issingleplayer and !IsFirstTimePredicted() then return end
 
     if !empty and !self:GetNeedCycle() then
         total = total + (self:GetBuff("ChamberLoadNonEmpty", true) or self:GetChamberSize())
@@ -404,7 +404,7 @@ function SWEP:ReloadInsert(empty)
         local load = self:GetCapacity() + math.min(self:Clip1(), self:GetChamberSize())
         if load - self:Clip1() > self:Ammo1() then load = self:Clip1() + self:Ammo1() end
         self:SetClipInfo(load)
-        if game.SinglePlayer() then
+        if issingleplayer then
             self:CallOnClient("SetClipInfo", tostring(load))
         end
 

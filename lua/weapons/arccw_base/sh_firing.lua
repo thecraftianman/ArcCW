@@ -1,3 +1,5 @@
+local issingleplayer = game.SinglePlayer()
+
 function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
 
@@ -16,7 +18,7 @@ function SWEP:CanPrimaryAttack()
         if CLIENT and ArcCW.Inv_Hidden then
             ArcCW.Inv_Hidden = false
             gui.EnableScreenClicker(true)
-        elseif game.SinglePlayer() then
+        elseif issingleplayer then
             -- Kind of ugly hack: in SP this is only called serverside so we ask client to do the same check
             self:CallOnClient("CanPrimaryAttack")
         end
@@ -151,7 +153,7 @@ function SWEP:PrimaryAttack()
 
     local desync = ArcCW.ConVars["desync"]:GetBool()
     local desyncnum = (desync and math.random()) or 0
-    math.randomseed(math.Round(util.SharedRandom(self:GetBurstCount(), -1337, 1337, !game.SinglePlayer() and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)) + desyncnum)
+    math.randomseed(math.Round(util.SharedRandom(self:GetBurstCount(), -1337, 1337, !issingleplayer and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)) + desyncnum)
 
     self.Primary.Automatic = true
 
@@ -163,7 +165,7 @@ function SWEP:PrimaryAttack()
 
     self:ApplyRandomSpread(dir, disp)
 
-    if (CLIENT or game.SinglePlayer()) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 3 and disp > 0 then
+    if (CLIENT or issingleplayer) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 3 and disp > 0 then
         local dev_tr = util.TraceLine({
             start = src,
             endpos = src + owner:GetAimVector() * 33000,
@@ -303,7 +305,7 @@ function SWEP:PrimaryAttack()
         for n = 1, bullet.Num do
             bullet.Num = 1
             local dirry = Vector(dir.x, dir.y, dir.z)
-            math.randomseed(math.Round(util.SharedRandom(n, -1337, 1337, !game.SinglePlayer() and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)) + desyncnum)
+            math.randomseed(math.Round(util.SharedRandom(n, -1337, 1337, !issingleplayer and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)) + desyncnum)
             if !self:GetBuff_Override("Override_NoRandSpread", self.NoRandSpread) then
                 self:ApplyRandomSpread(dirry, spread)
                 bullet.Dir = dirry
@@ -320,7 +322,7 @@ function SWEP:PrimaryAttack()
 
     owner:DoAnimationEvent(self:GetBuff_Override("Override_AnimShoot") or self.AnimShoot)
 
-    local shouldsupp = SERVER and !game.SinglePlayer()
+    local shouldsupp = SERVER and !issingleplayer
 
     if shouldsupp then SuppressHostEvents(owner) end
 
@@ -490,7 +492,7 @@ function SWEP:DoPrimaryFire(isent, data)
     if isent then
         self:FireRocket(data.ent, data.vel, data.ang, self.PhysBulletDontInheritPlayerVelocity)
     else
-        -- if !game.SinglePlayer() and !IsFirstTimePredicted() then return end
+        -- if !issingleplayer and !IsFirstTimePredicted() then return end
         if !IsFirstTimePredicted() then return end
 
         if shouldphysical then
@@ -703,7 +705,7 @@ function SWEP:DoShellEject(atti)
 end
 
 function SWEP:DoEffects(att)
-    if !game.SinglePlayer() and !IsFirstTimePredicted() then return end
+    if !issingleplayer and !IsFirstTimePredicted() then return end
 
     local ed = EffectData()
     ed:SetStart(self:GetShootSrc())
@@ -731,7 +733,7 @@ function SWEP:DryFire()
 end
 
 function SWEP:DoRecoil()
-    local single = game.SinglePlayer()
+    local single = issingleplayer
 
     if !single and !IsFirstTimePredicted() then return end
 

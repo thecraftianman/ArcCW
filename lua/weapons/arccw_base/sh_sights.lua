@@ -1,10 +1,12 @@
+local issingleplayer = game.SinglePlayer()
+
 SWEP.Sighted = false
 SWEP.Sprinted = false
-
+--[[
 local function linearlerp(a, b, c)
     return b + (c - b) * a
 end
-
+]]
 function SWEP:GetSightTime()
     return self:GetBuff("SightTime")
 end
@@ -79,7 +81,7 @@ function SWEP:EnterSights()
     if !self.ReloadInSights and (self:GetReloading() or self:GetOwner():KeyDown(IN_RELOAD)) then return end
     if self.LockSightsInPriorityAnim and self:GetPriorityAnim() then return end
     if self:GetBuff_Hook("Hook_ShouldNotSight") then return end
-    if (!game.SinglePlayer() and !IsFirstTimePredicted()) then return end
+    if (!issingleplayer and !IsFirstTimePredicted()) then return end
 
     self:SetupActiveSights()
 
@@ -104,7 +106,7 @@ function SWEP:ExitSights()
     if self:GetState() != ArcCW.STATE_SIGHTS then return end
     if self.LockSightsInReload and self:GetReloading() then return end
     if self.LockSightsInPriorityAnim and self:GetPriorityAnim() then return end
-    if (!game.SinglePlayer() and !IsFirstTimePredicted()) then return end
+    if (!issingleplayer and !IsFirstTimePredicted()) then return end
 
     self:SetState(ArcCW.STATE_IDLE)
     self.Sighted = false

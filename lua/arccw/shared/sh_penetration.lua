@@ -1,9 +1,10 @@
 local mth      = math
 local m_rand   = mth.Rand
 local m_lerp   = Lerp
+local issingleplayer = game.SinglePlayer()
 
 local function draw_debug()
-    return (CLIENT or game.SinglePlayer()) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 2
+    return (CLIENT or issingleplayer) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 2
 end
 
 function ArcCW:GetRicochetChance(penleft, tr)
@@ -262,7 +263,7 @@ function ArcCW:DoPenetration(tr, damage, bullet, penleft, physical, alreadypenne
                     debugoverlay.Cross(e, 3, 10, alreadypenned[btr.Entity:EntIndex()] and Color(0, 128, 255) or Color(255, 128, 0), true)
                     debugoverlay.Text(e, math.Round(penleft, 1) .. "mm", 10)
                 end
-                if (CLIENT or game.SinglePlayer()) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 1 and IsValid(btr.Entity) and !alreadypenned[btr.Entity:EntIndex()] then
+                if (CLIENT or issingleplayer) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 1 and IsValid(btr.Entity) and !alreadypenned[btr.Entity:EntIndex()] then
                     local str = string.format("%ddmg/%dm(%d%%)", math.floor(bullet.Weapon:GetDamage(dist)), dist, math.Round((1 - bullet.Weapon:GetRangeFraction(dist)) * 100))
                     debugoverlay.Text(btr.Entity:WorldSpaceCenter(), str, 5)
                 end
@@ -271,7 +272,7 @@ function ArcCW:DoPenetration(tr, damage, bullet, penleft, physical, alreadypenne
 
                 ArcCW:DoPenetration(btr, damage, bullet, penleft, false, alreadypenned)
 
-                -- if !game.SinglePlayer() and CLIENT then
+                -- if !issingleplayer and CLIENT then
                     local fx = EffectData()
                     fx:SetStart(tr.HitPos)
                     fx:SetOrigin(btr.HitPos)
@@ -445,7 +446,7 @@ function ArcCW:BulletCallback(att, tr, dmg, bullet, phys)
         util.Decal(decal, tr.StartPos, hitpos - (hitnormal * 16), wep:GetOwner())
     end
 
-    if (CLIENT or game.SinglePlayer()) and (!phys or SERVER) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 1 then
+    if (CLIENT or issingleplayer) and (!phys or SERVER) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 1 then
         local str = string.format("%ddmg/%dm(%d%%)", math.floor(dmg:GetDamage()), dist, math.Round((1 - delta) * 100))
         debugoverlay.Text(hitpos, str, 10)
         print(str)

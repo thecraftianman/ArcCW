@@ -5,8 +5,10 @@ function SWEP:GetMaxHeat()
     return self:GetBuff("HeatCapacity")
 end
 
+local issingleplayer = game.SinglePlayer()
+
 function SWEP:AddHeat(a)
-    local single = game.SinglePlayer()
+    local single = issingleplayer
     a = tonumber(a)
 
     if !(self.Jamming or self:GetBuff_Override("Override_Jamming")) then return end
@@ -147,7 +149,7 @@ function SWEP:DoMalfunction(post)
     local count = (self.ShotsSinceMalfunction or 0)
 
     if !self.NextMalfunction then
-        math.randomseed(math.Round(util.SharedRandom(count, -1337, 1337, !game.SinglePlayer() and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)))
+        math.randomseed(math.Round(util.SharedRandom(count, -1337, 1337, !issingleplayer and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)))
         self.NextMalfunction = math.ceil(math.sqrt(-2 * var * math.log(math.random())) * math.cos(2 * math.pi * math.random()))
     end
 

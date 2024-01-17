@@ -1,4 +1,6 @@
-if SERVER and game.SinglePlayer() then
+local issingleplayer = game.SinglePlayer()
+
+if SERVER and issingleplayer then
     util.AddNetworkString("arccw_sp_reloadlangs")
 end
 
@@ -241,16 +243,16 @@ hook.Add("PreGamemodeLoaded", "ArcCW_Lang", function()
 end)
 
 concommand.Add("arccw_reloadlangs", function(ply)
-    if SERVER and !game.SinglePlayer() and IsValid(ply) and !ply:IsSuperAdmin() then return end
+    if SERVER and !issingleplayer and IsValid(ply) and !ply:IsSuperAdmin() then return end
 
     ArcCW.LoadLanguages()
-    if SERVER and game.SinglePlayer() then
+    if SERVER and issingleplayer then
         net.Start("arccw_sp_reloadlangs")
         net.Broadcast()
     end
 end, nil, "Reloads all language files.")
 
-if game.SinglePlayer() then
+if issingleplayer then
     net.Receive("arccw_sp_reloadlangs", function()
         ArcCW.LoadLanguages()
     end)

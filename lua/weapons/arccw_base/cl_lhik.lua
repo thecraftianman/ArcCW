@@ -1,3 +1,5 @@
+local issingleplayer = game.SinglePlayer()
+
 local function qerp(delta, a, b)
     local qdelta = -(delta ^ 2) + (delta * 2)
 
@@ -17,7 +19,7 @@ SWEP.LHIKGunAng = Angle(0, 0, 0)
 function SWEP:DoLHIKAnimation(key, time, spbitch)
     if !IsValid(self:GetOwner()) then return end
 
-    if game.SinglePlayer() and !spbitch then
+    if issingleplayer and !spbitch then
         timer.Simple(0, function() if IsValid(self) then self:DoLHIKAnimation(key, time, true) end end)
         return
     end

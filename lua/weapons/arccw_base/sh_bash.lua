@@ -144,6 +144,8 @@ function SWEP:Bash(melee2)
     self:DoLunge()
 end
 
+local issingleplayer = game.SinglePlayer()
+
 function SWEP:MeleeAttack(melee2)
     local reach = 32 + self:GetBuff_Add("Add_MeleeRange") + self.MeleeRange
     local dmg = self:GetBuff_Override("Override_MeleeDamage", self.MeleeDamage) or 20
@@ -200,7 +202,7 @@ function SWEP:MeleeAttack(melee2)
     end
 
     -- We need the second part for single player because SWEP:Think is ran shared in SP
-    if !(game.SinglePlayer() and CLIENT) then
+    if !(issingleplayer and CLIENT) then
         if tr.Hit then
             if tr.Entity:IsNPC() or tr.Entity:IsNextBot() or tr.Entity:IsPlayer() then
                 self:MyEmitSound(self.MeleeHitNPCSound, 75, 100, 1, CHAN_USER_BASE + 2)

@@ -1,4 +1,5 @@
 local ang0 = Angle(0, 0, 0)
+local issingleplayer = game.SinglePlayer()
 local dev_alwaysready = ArcCW.ConVars["dev_alwaysready"]
 
 function SWEP:Deploy()
@@ -7,9 +8,7 @@ function SWEP:Deploy()
     end
 
     if self.UnReady then
-        local sp = game.SinglePlayer()
-
-        if sp then
+        if issingleplayer then
             if SERVER then
                 self:CallOnClient("LoadPreset", "autosave")
             else
@@ -48,7 +47,7 @@ function SWEP:Deploy()
     self:SetBurstCount(0)
 
     self:WepSwitchCleanup()
-    if game.SinglePlayer() then self:CallOnClient("WepSwitchCleanup") end
+    if issingleplayer then self:CallOnClient("WepSwitchCleanup") end
 
     if !self:GetOwner():InVehicle() then -- Don't play anim if in vehicle. This can be caused by HL2 level changes
         local prd = false
@@ -56,7 +55,7 @@ function SWEP:Deploy()
         local r_anim = self:SelectAnimation("ready")
         local d_anim = self:SelectAnimation("draw")
 
-        if (CLIENT and !game.SinglePlayer() and LocalPlayer():IsListenServerHost()) then
+        if (CLIENT and !issingleplayer and LocalPlayer():IsListenServerHost()) then
             self.ReadySoundTableHack = true
         end
 
@@ -83,7 +82,7 @@ function SWEP:Deploy()
 
     self:SetState(ArcCW.STATE_DISABLE)
 
-    if (SERVER or game.SinglePlayer()) and self.UnReady then
+    if (SERVER or issingleplayer) and self.UnReady then
         if SERVER then
             self:InitialDefaultClip()
         end
@@ -125,7 +124,7 @@ end
 function SWEP:ResetCheckpoints()
     self.CheckpointAnimation = nil
 
-    if game.SinglePlayer() and SERVER then
+    if issingleplayer and SERVER then
         net.Start("arccw_sp_checkpoints")
         net.Broadcast()
     end
@@ -148,7 +147,7 @@ function SWEP:InitialDefaultClip()
 end
 
 function SWEP:Initialize()
-    if SERVER and game.SinglePlayer() and IsValid(self:GetOwner()) and self:GetOwner():IsPlayer() then
+    if SERVER and issingleplayer and IsValid(self:GetOwner()) and self:GetOwner():IsPlayer() then
         self:CallOnClient("Initialize")
     end
 
@@ -178,7 +177,7 @@ function SWEP:Initialize()
         end
 
         -- Check for incompatibile addons once
-        if LocalPlayer().ArcCW_IncompatibilityCheck != true and game.SinglePlayer() then
+        if LocalPlayer().ArcCW_IncompatibilityCheck != true and issingleplayer then
             LocalPlayer().ArcCW_IncompatibilityCheck = true
 
             local incompatList = {}
@@ -272,7 +271,7 @@ function SWEP:Holster(wep)
     end
 
     self:WepSwitchCleanup()
-    if game.SinglePlayer() then self:CallOnClient("WepSwitchCleanup") end
+    if issingleplayer then self:CallOnClient("WepSwitchCleanup") end
 
     if wep == self then self:Deploy() return false end
     if self:GetHolster_Time() > CurTime() then return false end
@@ -383,7 +382,7 @@ function SWEP:WepSwitchCleanup()
 end
 
 function SWEP:ProceduralBash()
-    if game.SinglePlayer() and self:GetOwner():IsValid() then
+    if issingleplayer and self:GetOwner():IsValid() then
         self:CallOnClient("ProceduralBash")
     end
 

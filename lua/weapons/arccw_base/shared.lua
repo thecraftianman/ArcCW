@@ -703,7 +703,9 @@ SWEP.ProneMod_DisableTransitions = true
 SWEP.DrawWeaponInfoBox = false
 SWEP.BounceWeaponIcon = false
 
-if CLIENT or game.SinglePlayer() then
+local issingleplayer = game.SinglePlayer()
+
+if CLIENT or issingleplayer then
 
 SWEP.RecoilAmount = 0
 SWEP.RecoilAmountSide = 0
@@ -849,11 +851,11 @@ end
 
 function SWEP:SetState(v)
     self:SetNWState(v)
-    if !game.SinglePlayer() and CLIENT then self.State = v end
+    if !issingleplayer and CLIENT then self.State = v end
 end
 
 function SWEP:GetState(v)
-    if !game.SinglePlayer() and CLIENT and self.State then return self.State end
+    if !issingleplayer and CLIENT and self.State then return self.State end
     return self:GetNWState(v)
 end
 
@@ -924,34 +926,34 @@ end
 
 SWEP.CL_SightDelta = 1
 function SWEP:SetSightDelta(d)
-    if !game.SinglePlayer() and CLIENT then self.CL_SightDelta = d end
+    if !issingleplayer and CLIENT then self.CL_SightDelta = d end
     self:SetNWSightDelta(d)
 end
 
 function SWEP:GetSightDelta()
-    if !game.SinglePlayer() and CLIENT then return self.CL_SightDelta end
+    if !issingleplayer and CLIENT then return self.CL_SightDelta end
     return self:GetNWSightDelta()
 end
 
 SWEP.CL_SprintDelta = 0
 function SWEP:SetSprintDelta(d)
-    if !game.SinglePlayer() and CLIENT then self.CL_SprintDelta = d end
+    if !issingleplayer and CLIENT then self.CL_SprintDelta = d end
     self:SetNWSprintDelta(d)
 end
 
 function SWEP:GetSprintDelta()
-    if !game.SinglePlayer() and CLIENT then return self.CL_SprintDelta end
+    if !issingleplayer and CLIENT then return self.CL_SprintDelta end
     return self:GetNWSprintDelta()
 end
 
 SWEP.CL_MalfunctionJam = false
 function SWEP:SetMalfunctionJam(d)
-    if !game.SinglePlayer() and CLIENT then self.CL_MalfunctionJam = tobool(d) end
+    if !issingleplayer and CLIENT then self.CL_MalfunctionJam = tobool(d) end
     self:SetNWMalfunctionJam(d)
 end
 
 function SWEP:GetMalfunctionJam()
-    if !game.SinglePlayer() and CLIENT then return self.CL_MalfunctionJam end
+    if !issingleplayer and CLIENT then return self.CL_MalfunctionJam end
     return self:GetNWMalfunctionJam()
 end
 

@@ -1,10 +1,12 @@
 if CLIENT then return end
 
-net.Receive("arccw_sendconvar", function(len, ply)
+local issingleplayer = game.SinglePlayer()
+
+net.Receive("arccw_sendconvar", function(_, ply)
     local command = net.ReadString()
 
     if !ply:IsAdmin() then return end
-    if game.SinglePlayer() then return end
+    if issingleplayer then return end
     if string.sub(command, 1, 5) != "arccw" then return end
 
     local cmds = string.Split(command, " ")
@@ -16,7 +18,7 @@ net.Receive("arccw_sendconvar", function(len, ply)
     end
 
     local args = {}
-    for i, k in pairs(cmds) do
+    for _, k in pairs(cmds) do
         if k == " " then continue end
         k = string.Trim(k, " ")
 
