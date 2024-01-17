@@ -5,12 +5,10 @@ local hide = {
     ["CHudSecondaryAmmo"] = true,
 }
 
-CreateClientConVar("arccw_hud_togglestats", "0")
-
 ArcCW.HUDElementConVars = {
-    ["CHudHealth"] = CreateClientConVar("arccw_hud_showhealth", "1"),
+    ["CHudHealth"] = ArcCW.ConVars["hud_showhealth"],
     ["CHudBattery"] = ArcCW.ConVars["hud_showhealth"],
-    ["CHudAmmo"] = CreateClientConVar("arccw_hud_showammo", "1"),
+    ["CHudAmmo"] = ArcCW.ConVars["hud_showammo"],
     ["CHudSecondaryAmmo"] = ArcCW.ConVars["hud_showammo"],
 }
 

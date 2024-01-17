@@ -90,6 +90,9 @@ ArcCW.ClientConVars = {
     ["arccw_hud_3dfun_up"]            = { def =  1 },
     ["arccw_hud_3dfun_forward"]       = { def =  0 },
     ["arccw_hud_size"]                = { def =  1 },
+    ["arccw_hud_togglestats"]         = { def =  0 },
+    ["arccw_hud_showhealth"]          = { def =  1 },
+    ["arccw_hud_showammo"]            = { def =  1 },
 
     ["arccw_cust_sounds"]             = { def =  1, desc = "Play sounds when opening and closing the customization menu." },
 
