@@ -205,6 +205,8 @@ net.Receive("arccw_sendbullet", function(len, ply)
         ent = net.ReadEntity()
     end
 
+    local owner = (IsValid(weapon) and weapon:GetOwner()) or nil
+
     local bullet = {
         Pos = pos,
         Vel = ang:Forward() * vel,
@@ -215,12 +217,12 @@ net.Receive("arccw_sendbullet", function(len, ply)
         Dead = false,
         Damaged = {},
         Drag = drag,
-        Attacker = ent or weapon:GetOwner(),
+        Attacker = ent or owner or game.GetWorld(),
         Gravity = grav,
         Profile = profile,
         PhysBulletImpact = impact,
         Weapon = weapon,
-        Filter = {weapon:GetOwner()},
+        Filter = {owner},
     }
 
     if bit.band( util.PointContents( pos ), CONTENTS_WATER ) == CONTENTS_WATER then
