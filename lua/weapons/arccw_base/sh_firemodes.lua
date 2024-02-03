@@ -105,9 +105,10 @@ function SWEP:ChangeFiremode(pred)
     end
 end
 
-function SWEP:GetCurrentFiremode()
+function SWEP:GetCurrentFiremode(stable)
+    stable = stable or self:GetTable()
     local fm = self:GetFireMode()
-    local fmt = self:GetBuff_Override("Override_Firemodes", self.Firemodes)
+    local fmt = self:GetBuff_Override("Override_Firemodes", stable.Firemodes, stable)
     fmt.BaseClass = nil
 
     if fm > table.Count(fmt) or fm < 1 then
@@ -120,12 +121,14 @@ function SWEP:GetCurrentFiremode()
 end
 
 function SWEP:GetFiremodeName()
-    if self:GetBuff_Hook("Hook_FiremodeName") then return self:GetBuff_Hook("Hook_FiremodeName") end
+    local namehook = self:GetBuff_Hook("Hook_FiremodeName")
+    if namehook then return namehook end
 
     local abbrev = ArcCW.ConVars["hud_fcgabbrev"]:GetBool() and ".abbrev" or ""
 
     if self:GetInUBGL() then
-        return self:GetBuff_Override("UBGL_PrintName") and self:GetBuff_Override("UBGL_PrintName") or ArcCW.GetTranslation("fcg.ubgl" .. abbrev)
+        local ubglname = self:GetBuff_Override("UBGL_PrintName")
+        return ubglname and ubglname or ArcCW.GetTranslation("fcg.ubgl" .. abbrev)
     end
 
     local fm = self:GetCurrentFiremode()
@@ -143,7 +146,8 @@ function SWEP:GetFiremodeName()
 end
 
 function SWEP:GetFiremodeBars()
-    if self:GetBuff_Hook("Hook_FiremodeBars") then return self:GetBuff_Hook("Hook_FiremodeBars") end
+    local barshook = self:GetBuff_Hook("Hook_FiremodeBars")
+    if barshook then return barshook end
 
     if self:GetInUBGL() then
         return "____-"

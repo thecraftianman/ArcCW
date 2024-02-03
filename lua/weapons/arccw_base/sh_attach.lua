@@ -112,8 +112,8 @@ function SWEP:GetIsManualAction()
 end
 
 -- ONE FUNCTION TO RULE THEM ALL
-function SWEP:GetBuff(buff, defaultnil, defaultvar)
-    local stable = self:GetTable()
+function SWEP:GetBuff(buff, defaultnil, defaultvar, stable)
+    stable = stable or self:GetTable()
 
     local result = stable[buff] or defaultvar
     if !result and defaultnil then
@@ -122,11 +122,11 @@ function SWEP:GetBuff(buff, defaultnil, defaultvar)
         result = 1
     end
 
-    result = self:GetBuff_Override("Override_" .. buff, result)
+    result = self:GetBuff_Override("Override_" .. buff, result, stable)
 
     if isnumber(result) then
-        result = self:GetBuff_Add("Add_" .. buff) + result
-        result = self:GetBuff_Mult("Mult_" .. buff) * result
+        result = self:GetBuff_Add("Add_" .. buff, stable) + result
+        result = self:GetBuff_Mult("Mult_" .. buff, stable) * result
     end
 
     return result
@@ -146,7 +146,7 @@ function SWEP:GetBuff_Stat(buff, slot)
     end
 end
 
-function SWEP:GetBuff_Hook(buff, data, defaultnil)
+function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
     -- call through hook function, args = data. return nil to do nothing. return false to prevent thing from happening.
     local hooks = self.AttCache_Hooks
 
@@ -192,8 +192,10 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil)
             end
         end
 
-        if isfunction(self[buff]) then
-            table.insert(hooks[buff], {self[buff], self[buff .. "_Priority"] or 0})
+        stable = stable or self:GetTable()
+
+        if isfunction(stable[buff]) then
+            table.insert(hooks[buff], {stable[buff], stable[buff .. "_Priority"] or 0})
         end
 
         table.sort(hooks[buff], function(a, b) return a[2] >= b[2] end)
@@ -201,7 +203,7 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil)
     end
 
     local retvalue = nil
-    for i, k in ipairs(hooks[buff]) do
+    for _, k in ipairs(hooks[buff]) do
         local ret = k[1](self, data)
         if ret == false then
             return
@@ -219,18 +221,18 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil)
     return data
 end
 
-function SWEP:GetBuff_Override(buff, default)
-
+function SWEP:GetBuff_Override(buff, default, stable)
+    stable = stable or self:GetTable()
     local level = 0
     local current = nil
     local winningslot = nil
 
-    if MODIFIED_CACHE and !self.ModifiedCache[buff] then
+    if MODIFIED_CACHE and !stable.ModifiedCache[buff] then
         -- ArcCW.ConVar_BuffOverrides[buff] isn't actually implemented??
 
         if !ArcCW.BuffStack then
             ArcCW.BuffStack = true
-            local out = (self:GetBuff_Hook("O_Hook_" .. buff, {buff = buff}) or {})
+            local out = (self:GetBuff_Hook("O_Hook_" .. buff, {buff = buff}, _, stable) or {})
             current = out.current or current
             winningslot = out.winningslot or winningslot
             ArcCW.BuffStack = false
@@ -239,7 +241,7 @@ function SWEP:GetBuff_Override(buff, default)
         return current or default, winningslot
     end
 
-    local bufftbl = self.TickCache_Overrides[buff]
+    local bufftbl = stable.TickCache_Overrides[buff]
 
     if bufftbl then
         current = bufftbl[1]
@@ -255,7 +257,7 @@ function SWEP:GetBuff_Override(buff, default)
 
             ArcCW.BuffStack = true
 
-            local out = (self:GetBuff_Hook("O_Hook_" .. buff, data) or {})
+            local out = (self:GetBuff_Hook("O_Hook_" .. buff, data, _, stable) or {})
 
             current = out.current or current
             winningslot = out.winningslot or winningslot
@@ -271,7 +273,7 @@ function SWEP:GetBuff_Override(buff, default)
         end
     end
 
-    local atts = self.Attachments
+    local atts = stable.Attachments
 
     for i = 1, #atts do
         local k = atts[i]
@@ -321,7 +323,7 @@ function SWEP:GetBuff_Override(buff, default)
     if !ArcCW.BuffStack then
 
         local eles = self:GetActiveElements()
-        local atteles = self.AttachmentElements
+        local atteles = stable.AttachmentElements
         ArcCW.BuffStack = true
 
         for i = 1, #eles do
@@ -342,17 +344,17 @@ function SWEP:GetBuff_Override(buff, default)
 
     end
 
-    if self[buff] != nil then
-        local pri = self[buff .. "_Priority"] or 1
+    if stable[buff] != nil then
+        local pri = stable[buff .. "_Priority"] or 1
         if level == 0 or (pri > level) then
-            current = self[buff]
+            current = stable[buff]
             level = pri
         end
     end
 
-    self.TickCache_Overrides[buff] = {current, winningslot}
+    stable.TickCache_Overrides[buff] = {current, winningslot}
 
-    if VERIFY_MODIFIED_CACHE and !self.ModifiedCache[buff] and current != nil then
+    if VERIFY_MODIFIED_CACHE and !stable.ModifiedCache[buff] and current != nil then
         print("ArcCW: Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(current) .. ")!")
     end
 
@@ -366,7 +368,7 @@ function SWEP:GetBuff_Override(buff, default)
 
         ArcCW.BuffStack = true
 
-        current = (self:GetBuff_Hook("O_Hook_" .. buff, data) or {}).current or current
+        current = (self:GetBuff_Hook("O_Hook_" .. buff, data, _, stable) or {}).current or current
 
         ArcCW.BuffStack = false
 
@@ -379,14 +381,14 @@ function SWEP:GetBuff_Override(buff, default)
     return current, winningslot
 end
 
-function SWEP:GetBuff_Mult(buff)
-
+function SWEP:GetBuff_Mult(buff, stable)
+    stable = stable or self:GetTable()
     local mult = 1
 
     if MODIFIED_CACHE and !self.ModifiedCache[buff] then
         if !ArcCW.BuffStack then
             ArcCW.BuffStack = true
-            mult = (self:GetBuff_Hook("M_Hook_" .. buff, {buff = buff, mult = 1}) or {}).mult or mult
+            mult = (self:GetBuff_Hook("M_Hook_" .. buff, {buff = buff, mult = 1}, _, stable) or {}).mult or mult
             ArcCW.BuffStack = false
         end
         if ArcCW.ConVar_BuffMults[buff] then
@@ -399,8 +401,8 @@ function SWEP:GetBuff_Mult(buff)
         return mult
     end
 
-    if self.TickCache_Mults[buff] then
-        mult = self.TickCache_Mults[buff]
+    if stable.TickCache_Mults[buff] then
+        mult = stable.TickCache_Mults[buff]
         local data = {
             buff = buff,
             mult = mult
@@ -410,7 +412,7 @@ function SWEP:GetBuff_Mult(buff)
 
             ArcCW.BuffStack = true
 
-            mult = (self:GetBuff_Hook("M_Hook_" .. buff, data) or {}).mult or mult
+            mult = (self:GetBuff_Hook("M_Hook_" .. buff, data, _, stable) or {}).mult or mult
 
             ArcCW.BuffStack = false
 
@@ -427,7 +429,10 @@ function SWEP:GetBuff_Mult(buff)
         return mult
     end
 
-    for i, k in pairs(self.Attachments) do
+    local atts = stable.Attachments
+
+    for i = 1, #atts do
+        local k = atts[i]
         if !k.Installed then continue end
 
         local atttbl = ArcCW.AttachmentTable[k.Installed]
@@ -447,21 +452,25 @@ function SWEP:GetBuff_Mult(buff)
         mult = mult * cfm[buff]
     end
 
-    if self:GetTable()[buff] then
-        mult = mult * self:GetTable()[buff]
+    if stable[buff] then
+        mult = mult * stable[buff]
     end
 
-    for i, e in pairs(self:GetActiveElements()) do
-        local ele = self.AttachmentElements[e]
+    local atteles = stable.AttachmentElements
+    local eles = self:GetActiveElements()
+
+    for i = 1, #eles do
+        local e = eles[i]
+        local ele = atteles[e]
 
         if ele and ele[buff] then
             mult = mult * ele[buff]
         end
     end
 
-    self.TickCache_Mults[buff] = mult
+    stable.TickCache_Mults[buff] = mult
 
-    if VERIFY_MODIFIED_CACHE and !self.ModifiedCache[buff] and mult != 1 then
+    if VERIFY_MODIFIED_CACHE and !stable.ModifiedCache[buff] and mult != 1 then
         print("ArcCW: Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(mult) .. ")!")
     end
 
@@ -482,7 +491,7 @@ function SWEP:GetBuff_Mult(buff)
 
         ArcCW.BuffStack = true
 
-        mult = (self:GetBuff_Hook("M_Hook_" .. buff, data) or {}).mult or mult
+        mult = (self:GetBuff_Hook("M_Hook_" .. buff, data, _, stable) or {}).mult or mult
 
         ArcCW.BuffStack = false
 
@@ -491,13 +500,14 @@ function SWEP:GetBuff_Mult(buff)
     return mult
 end
 
-function SWEP:GetBuff_Add(buff)
+function SWEP:GetBuff_Add(buff, stable)
+    stable = stable or self:GetTable()
     local add = 0
 
-    if MODIFIED_CACHE and !self.ModifiedCache[buff] then
+    if MODIFIED_CACHE and !stable.ModifiedCache[buff] then
         if !ArcCW.BuffStack then
             ArcCW.BuffStack = true
-            add = (self:GetBuff_Hook("A_Hook_" .. buff, {buff = buff, add = 0}) or {}).add or add
+            add = (self:GetBuff_Hook("A_Hook_" .. buff, {buff = buff, add = 0}, _, stable) or {}).add or add
             ArcCW.BuffStack = false
         end
         if ArcCW.ConVar_BuffAdds[buff] then
@@ -506,8 +516,8 @@ function SWEP:GetBuff_Add(buff)
         return add
     end
 
-    if self.TickCache_Adds[buff] then
-        add = self.TickCache_Adds[buff]
+    if stable.TickCache_Adds[buff] then
+        add = stable.TickCache_Adds[buff]
 
         local data = {
             buff = buff,
@@ -518,7 +528,7 @@ function SWEP:GetBuff_Add(buff)
 
             ArcCW.BuffStack = true
 
-            add = (self:GetBuff_Hook("A_Hook_" .. buff, data) or {}).add or add
+            add = (self:GetBuff_Hook("A_Hook_" .. buff, data, _, stable) or {}).add or add
 
             ArcCW.BuffStack = false
 
@@ -531,7 +541,10 @@ function SWEP:GetBuff_Add(buff)
         return add
     end
 
-    for i, k in pairs(self.Attachments) do
+    local atts = stable.Attachments
+
+    for i = 1, #atts do
+        local k = atts[i]
         if !k.Installed then continue end
 
         local atttbl = ArcCW.AttachmentTable[k.Installed]
@@ -551,17 +564,21 @@ function SWEP:GetBuff_Add(buff)
         add = add + cfm[buff]
     end
 
-    for i, e in pairs(self:GetActiveElements()) do
-        local ele = self.AttachmentElements[e]
+    local atteles = stable.AttachmentElements
+    local eles = self:GetActiveElements()
+
+    for i = 1, #eles do
+        local e = eles[i]
+        local ele = atteles[e]
 
         if ele and ele[buff] then
             add = add + ele[buff]
         end
     end
 
-    self.TickCache_Adds[buff] = add
+    stable.TickCache_Adds[buff] = add
 
-    if VERIFY_MODIFIED_CACHE and !self.ModifiedCache[buff] and add != 0 then
+    if VERIFY_MODIFIED_CACHE and !stable.ModifiedCache[buff] and add != 0 then
         print("ArcCW: Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(add) .. ")!")
     end
 
@@ -578,7 +595,7 @@ function SWEP:GetBuff_Add(buff)
 
         ArcCW.BuffStack = true
 
-        add = (self:GetBuff_Hook("A_Hook_" .. buff, data) or {}).add or add
+        add = (self:GetBuff_Hook("A_Hook_" .. buff, data, _, stable) or {}).add or add
 
         ArcCW.BuffStack = false
 
@@ -708,13 +725,8 @@ end
 
 function SWEP:GetTracerOrigin()
     local ow = self:GetOwner()
-    local wm = nil
-    local muzz = nil
-
-    if !ow:IsNPC() and !ow:IsNextBot() and ow:IsValid() then
-        wm = !ow:GetViewModel():IsValid() or ow:ShouldDrawLocalPlayer()
-        muzz = self:GetMuzzleDevice(wm)
-    end
+    local wm = !ow:IsPlayer() or !ow:GetViewModel():IsValid() or ow:ShouldDrawLocalPlayer()
+    local muzz = self:GetMuzzleDevice(wm)
 
     if muzz and muzz:IsValid() then
         local posang = muzz:GetAttachment(self:GetBuff_Override("Override_MuzzleEffectAttachment", self.MuzzleEffectAttachment) or 1)
@@ -739,14 +751,14 @@ function SWEP:CheckFlags(reject, need)
     if !istable(reject) then reject = {reject} end
     if !istable(need) then need = {need} end
 
-    for _, i in pairs(reject) do
-        if flags[i] then
+    for i = 1, #reject do
+        if table.HasValue(flags, reject[i]) then
             return false
         end
     end
 
-    for _, i in pairs(need) do
-        if !flags[i] then
+    for i = 1, #need do
+        if !table.HasValue(flags, need[i]) then
             return false
         end
     end
@@ -1126,6 +1138,8 @@ function SWEP:GetPickX()
     return ArcCW.ConVars["atts_pickx"]:GetInt()
 end
 
+local curgamemode = engine.ActiveGamemode()
+
 function SWEP:Attach(slot, attname, silent, noadjust)
     silent = silent or false
     local attslot = self.Attachments[slot]
@@ -1247,7 +1261,7 @@ function SWEP:Attach(slot, attname, silent, noadjust)
         self:SetupModel(true)
         ArcCW:PlayerSendAttInv(self:GetOwner())
 
-        if engine.ActiveGamemode() == "terrortown" then
+        if curgamemode == "terrortown" then
             self:TTT_PostAttachments()
         end
     else
@@ -1380,7 +1394,7 @@ function SWEP:Detach(slot, silent, noadjust, nocheck)
         self:SetupModel(true)
         ArcCW:PlayerSendAttInv(self:GetOwner())
 
-        if engine.ActiveGamemode() == "terrortown" then
+        if curgamemode == "terrortown" then
             self:TTT_PostAttachments()
         end
     end

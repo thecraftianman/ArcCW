@@ -289,8 +289,8 @@ local GunDriverFix = Angle( 0, 90, 90 )
 
 function SWEP:GetViewModelPosition(pos, ang)
     if ArcCW.ConVars["dev_benchgun"]:GetBool() then
-        if ArcCW.ConVars["dev_benchgun_custom"]:GetString() then
-            local bgc = ArcCW.ConVars["dev_benchgun_custom"]:GetString()
+        local bgc = ArcCW.ConVars["dev_benchgun_custom"]:GetString()
+        if bgc then
             if string.Left(bgc, 6) != "setpos" then return vector_origin, angle_zero end
 
             bgc = string.TrimLeft(bgc, "setpos ")
@@ -310,7 +310,8 @@ function SWEP:GetViewModelPosition(pos, ang)
     local FT = scrunkly()
     local CT = CurTime()
     local TargetTick = (1 / FT) / 66.66
-    local cdelta = math.Clamp(math.ease.InOutSine((owner:GetViewOffset().z - owner:GetCurrentViewOffset().z) / (owner:GetViewOffset().z - owner:GetViewOffsetDucked().z)),0,1)
+    local viewoffset = owner:GetViewOffset()
+    local cdelta = math.Clamp(math.ease.InOutSine((viewoffset.z - owner:GetCurrentViewOffset().z) / (viewoffset.z - owner:GetViewOffsetDucked().z)),0,1)
 
     if TargetTick < 1 then
         FT = FT * TargetTick
@@ -321,8 +322,9 @@ function SWEP:GetViewModelPosition(pos, ang)
     local sgtd = self:GetSightDelta()
     local sprd = self:GetSprintDelta()
 
-    local sprinted = self.Sprinted or state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint()
-    local sighted = self.Sighted or state == ArcCW.STATE_SIGHTS
+    local stable = self:GetTable()
+    local sprinted = stable.Sprinted or state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint()
+    local sighted = stable.Sighted or state == ArcCW.STATE_SIGHTS
     local holstered = self:GetCurrentFiremode().Mode == 0
 
     if issingleplayer then
@@ -335,7 +337,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     oldang:Set(ang)
     ang:Sub(self:GetOurViewPunchAngles())
 
-    actual = self.ActualVMData or {
+    actual = stable.ActualVMData or {
         pos = Vector(),
         ang = Angle(),
         down = 1,
@@ -345,8 +347,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         evang = Angle(),
     }
 
-    local apos, aang = self:GetBuff_Override("Override_ActivePos", self.ActivePos), self:GetBuff_Override("Override_ActiveAng", self.ActiveAng)
-    local cpos, cang = self:GetBuff("CrouchPos", true) or apos, self:GetBuff("CrouchAng", true) or aang
+    local apos, aang = self:GetBuff_Override("Override_ActivePos", stable.ActivePos, stable), self:GetBuff_Override("Override_ActiveAng", stable.ActiveAng, stable)
     target.down = 1
     target.sway = 2
     target.bob = 2
@@ -354,22 +355,23 @@ function SWEP:GetViewModelPosition(pos, ang)
     -- stopwatch("set")
 
     if self:InBipod() and self:GetBipodAngle() then
-        local bpos = self:GetBuff_Override("Override_InBipodPos", self.InBipodPos)
+        local bpos = self:GetBuff_Override("Override_InBipodPos", stable.InBipodPos, stable)
         target.pos:Set(asight and asight.Pos or apos)
         target.ang:Set(asight and asight.Ang or aang)
 
-        local BEA = (self.BipodStartAngle or self:GetBipodAngle()) - owner:EyeAngles()
-        target.pos:Add(BEA:Right() * bpos.x * self.InBipodMult.x)
-        target.pos:Add(BEA:Forward() * bpos.y * self.InBipodMult.y)
-        target.pos:Add(BEA:Up() * bpos.z * self.InBipodMult.z)
+        local BEA = (stable.BipodStartAngle or self:GetBipodAngle()) - owner:EyeAngles()
+        target.pos:Add(BEA:Right() * bpos.x * stable.InBipodMult.x)
+        target.pos:Add(BEA:Forward() * bpos.y * stable.InBipodMult.y)
+        target.pos:Add(BEA:Up() * bpos.z * stable.InBipodMult.z)
         target.sway = 0.2
     -- elseif (owner:Crouching() or owner:KeyDown(IN_DUCK)) and !self:GetReloading() then
         -- target.pos:Set(self:GetBuff("CrouchPos", true) or apos)
         -- target.ang:Set(self:GetBuff("CrouchAng", true) or aang)
     elseif self:GetReloading() then
-        target.pos:Set(self:GetBuff("ReloadPos", true) or apos)
-        target.ang:Set(self:GetBuff("ReloadAng", true) or aang)
+        target.pos:Set(self:GetBuff("ReloadPos", true, _, stable) or apos)
+        target.ang:Set(self:GetBuff("ReloadAng", true, _, stable) or aang)
     else
+        local cpos, cang = self:GetBuff("CrouchPos", true, _, stable) or apos, self:GetBuff("CrouchAng", true, _, stable) or aang
         target.pos:Set(apos)
         target.ang:Set(aang)
         LerpMod(target.pos, cpos, cdelta)
@@ -394,8 +396,8 @@ function SWEP:GetViewModelPosition(pos, ang)
         local mx, my = input.GetCursorPos()
         mx = 2 * mx / ScrW()
         my = 2 * my / ScrH()
-        target.pos:Set(self:GetBuff_Override("Override_CustomizePos", self.CustomizePos))
-        target.ang:Set(self:GetBuff_Override("Override_CustomizeAng", self.CustomizeAng))
+        target.pos:Set(self:GetBuff_Override("Override_CustomizePos", stable.CustomizePos, stable))
+        target.ang:Set(self:GetBuff_Override("Override_CustomizeAng", stable.CustomizeAng, stable))
         target.pos.x = target.pos.x + mx
         target.pos.z = target.pos.z + my
         target.ang.y = target.ang.y + my * 2
@@ -408,8 +410,8 @@ function SWEP:GetViewModelPosition(pos, ang)
     -- stopwatch("cust")
 
     -- Sprinting
-    local hpos, spos = self:GetBuff("HolsterPos", true), self:GetBuff("SprintPos", true)
-    local hang, sang = self:GetBuff("HolsterAng", true), self:GetBuff("SprintAng", true)
+    local hpos, spos = self:GetBuff("HolsterPos", true, _, stable), self:GetBuff("SprintPos", true, _, stable)
+    local hang, sang = self:GetBuff("HolsterAng", true, _, stable), self:GetBuff("SprintAng", true, _, stable)
     do
         local aaaapos = holstered and (hpos or spos) or (spos or hpos)
         local aaaaang = holstered and (hang or sang) or (sang or hang)
@@ -436,7 +438,7 @@ function SWEP:GetViewModelPosition(pos, ang)
             target.ang[i] = target.ang[i] + jaffset[i] * coolilove
         end
 
-        local fu_sprint = (sprinted and self:SelectAnimation("idle_sprint"))
+        local fu_sprint = (sprinted and self:SelectAnimation("idle_sprint", stable))
 
         target.sway = target.sway * f_lerp(sd, 1, fu_sprint and 0 or 2)
         target.bob = target.bob * f_lerp(sd, 1, fu_sprint and 0 or 2)
@@ -489,12 +491,13 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.ang = Angle(target.ang)
     end
 
-    target.ang.y = target.ang.y + (self:GetFreeAimOffset().y * 0.5)
-    target.ang.p = target.ang.p - (self:GetFreeAimOffset().p * 0.5)
+    local freeaimoffset = self:GetFreeAimOffset()
+    target.ang.y = target.ang.y + (freeaimoffset.y * 0.5)
+    target.ang.p = target.ang.p - (freeaimoffset.p * 0.5)
 
-    if self.InProcDraw then
-        self.InProcHolster = false
-        local delta = m_clamp((CT - self.ProcDrawTime) / (0.5 * self:GetBuff_Mult("Mult_DrawTime")), 0, 1)
+    if stable.InProcDraw then
+        stable.InProcHolster = false
+        local delta = m_clamp((CT - stable.ProcDrawTime) / (0.5 * self:GetBuff_Mult("Mult_DrawTime", stable)), 0, 1)
         target.pos = LerpVector(delta, procdraw_vec, target.pos)
         target.ang = LerpAngle(delta, procdraw_ang, target.ang)
         target.down = target.down
@@ -502,9 +505,9 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.bob = target.bob
     end
 
-    if self.InProcHolster then
-        self.InProcDraw = false
-        local delta = 1 - m_clamp((CT - self.ProcHolsterTime) / (0.25 * self:GetBuff_Mult("Mult_DrawTime")), 0, 1)
+    if stable.InProcHolster then
+        stable.InProcDraw = false
+        local delta = 1 - m_clamp((CT - stable.ProcHolsterTime) / (0.25 * self:GetBuff_Mult("Mult_DrawTime", stable)), 0, 1)
         target.pos = LerpVector(delta, procdraw_vec, target.pos)
         target.ang = LerpAngle(delta, prochol_ang, target.ang)
         target.down = target.down
@@ -512,21 +515,21 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.bob = target.bob
     end
 
-    if self.InProcBash then
-        self.InProcDraw = false
-        local mult = self:GetBuff_Mult("Mult_MeleeTime")
-        local mtime = self.MeleeTime * mult
-        local delta = 1 - m_clamp((CT - self.ProcBashTime) / mtime, 0, 1)
+    if stable.InProcBash then
+        stable.InProcDraw = false
+        local mult = self:GetBuff_Mult("Mult_MeleeTime", stable)
+        local mtime = stable.MeleeTime * mult
+        local delta = 1 - m_clamp((CT - stable.ProcBashTime) / mtime, 0, 1)
 
         local bp, ba
 
         if delta > 0.3 then
-            bp = self:GetBuff_Override("Override_BashPreparePos", self.BashPreparePos)
-            ba = self:GetBuff_Override("Override_BashPrepareAng", self.BashPrepareAng)
+            bp = self:GetBuff_Override("Override_BashPreparePos", stable.BashPreparePos, stable)
+            ba = self:GetBuff_Override("Override_BashPrepareAng", stable.BashPrepareAng, stable)
             delta = (delta - 0.5) * 2
         else
-            bp = self:GetBuff_Override("Override_BashPos", self.BashPos)
-            ba = self:GetBuff_Override("Override_BashAng", self.BashAng)
+            bp = self:GetBuff_Override("Override_BashPos", stable.BashPos, stable)
+            ba = self:GetBuff_Override("Override_BashAng", stable.BashAng, stable)
             delta = delta * 2
         end
 
@@ -536,7 +539,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         target.speed = 10
 
         if delta == 0 then
-            self.InProcBash = false
+            stable.InProcBash = false
         end
     end
 
@@ -563,7 +566,7 @@ function SWEP:GetViewModelPosition(pos, ang)
 
     -- stopwatch("gunbone")
 
-    local vmhit = self.ViewModel_Hit
+    local vmhit = stable.ViewModel_Hit
     if vmhit then
         if !vmhit:IsZero() then
             target.pos.x = target.pos.x + m_clamp(vmhit.y, -1, 1) * 0.25
@@ -581,7 +584,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     end
 
     if ArcCW.ConVars["shakevm"]:GetBool() and !engine.IsRecordingDemo() then
-        target.pos:Add(VectorRand() * self.RecoilAmount * 0.2 * self.RecoilVMShake)
+        target.pos:Add(VectorRand() * stable.RecoilAmount * 0.2 * stable.RecoilVMShake)
     end
 
     -- stopwatch("vmhit")
@@ -603,8 +606,8 @@ function SWEP:GetViewModelPosition(pos, ang)
     -- stopwatch("actual -> target")
 
     local coolsway = ArcCW.ConVars["vm_coolsway"]:GetBool()
-    self.SwayScale = (coolsway and 0) or actual.sway
-    self.BobScale = (coolsway and 0) or actual.bob
+    stable.SwayScale = (coolsway and 0) or actual.sway
+    stable.BobScale = (coolsway and 0) or actual.bob
 
     if coolsway then
         swayxmult = ArcCW.ConVars["vm_sway_zmult"]:GetFloat() or 1
@@ -629,7 +632,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     end
 
     local old_r, old_f, old_u = oldang:Right(), oldang:Forward(), oldang:Up()
-    pos:Add(math.min(self.RecoilPunchBack, Lerp(sgtd, self.RecoilPunchBackMaxSights or 1, self.RecoilPunchBackMax)) * -old_f)
+    pos:Add(math.min(stable.RecoilPunchBack, Lerp(sgtd, stable.RecoilPunchBackMaxSights or 1, stable.RecoilPunchBackMax)) * -old_f)
 
     ang:RotateAroundAxis(old_r, actual.ang.x)
     ang:RotateAroundAxis(old_u, actual.ang.y)
@@ -656,8 +659,8 @@ function SWEP:GetViewModelPosition(pos, ang)
 
     ang:Add(self:GetOurViewPunchAngles() * Lerp(sgtd, 1, -1))
 
-    local gunbone, gbslot = self:GetBuff_Override("LHIK_GunDriver")
-    local atts = self.Attachments
+    local gunbone, gbslot = self:GetBuff_Override("LHIK_GunDriver", _, stable)
+    local atts = stable.Attachments
     local lhik_model = gbslot and atts[gbslot].VElement and atts[gbslot].VElement.Model -- Visual M203 attachment
     local lhik_anim_model = gbslot and atts[gbslot].GodDriver and atts[gbslot].GodDriver.Model -- M203 anim and camera
     local lhik_refl_model = gbslot and atts[gbslot].ReflectDriver and atts[gbslot].ReflectDriver.Model -- Rifle
@@ -695,7 +698,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         end
     end
 
-    self.ActualVMData = actual
+    stable.ActualVMData = actual
 
     -- stopwatch("apply actual")
 

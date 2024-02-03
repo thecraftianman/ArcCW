@@ -185,7 +185,7 @@ function SWEP:Reload()
         end
     end
 
-    if !self.ReloadInSights then
+    if !(self.ReloadInSights or self:GetBuff_Override("Override_ReloadInSights")) then
         self:ExitSights()
         self.Sighted = false
     end

@@ -781,7 +781,13 @@ function SWEP:DrawCustomModel(wm, origin, angle)
         -- end
     end
 
-    for i, k in pairs(models) do
+    local activeeles = self:GetActiveElements()
+    local atts = self.Attachments
+    local atteles = self.AttachmentElements
+    local mirrorvmwm = self.MirrorVMWM
+
+    for i = 1, #models do
+        local k = models[i]
         if !IsValid(k.Model) then
             self:SetupModel(wm)
             return
@@ -805,7 +811,7 @@ function SWEP:DrawCustomModel(wm, origin, angle)
             if IsValid(owner) and !custompos then
                 local wmo = self.WorldModelOffset
                 if !wmo then
-                    wmo = {pos = Vector(0, 0, 0), ang = Angle(0, 0, 0)}
+                    wmo = {pos = vector_origin, ang = angle_zero}
                 end
                 k.Model:SetParent(owner)
                 vm = owner
@@ -816,13 +822,13 @@ function SWEP:DrawCustomModel(wm, origin, angle)
                 vm = self
                 selfmode = true
                 basewm = true
-                k.OffsetAng = Angle(0, 0, 0)
-                k.OffsetPos = Vector(0, 0, 0)
+                k.OffsetAng = angle_zero
+                k.OffsetPos = vector_origin
             end
         elseif wm and self:ShouldCheapWorldModel() then
             continue
         else
-            if wm and self.MirrorVMWM then
+            if wm and mirrorvmwm then
                 vm = self.WMModel or self
                 -- vm = self
             end
@@ -865,14 +871,14 @@ function SWEP:DrawCustomModel(wm, origin, angle)
                 end
             end
 
-            if custompos and (!self.MirrorVMWM or (self.MirrorVMWM and k.Model:GetModel() == self.ViewModel) ) then
+            if custompos and (!mirrorvmwm or (mirrorvmwm and k.Model:GetModel() == self.ViewModel) ) then
                 bpos = origin
                 bang = angle
             end
 
             if k.Slot then
 
-                local attslot = self.Attachments[k.Slot]
+                local attslot = atts[k.Slot]
 
                 local delta = attslot.SlidePos or 0.5
 
@@ -880,22 +886,21 @@ function SWEP:DrawCustomModel(wm, origin, angle)
                 local wmelemod = nil
                 local slidemod = nil
 
-                for _, e in pairs(self:GetActiveElements(true)) do
-                    local ele = self.AttachmentElements[e]
+                for j = 1, #activeeles do
+                    local e = activeeles[j]
+                    local ele = atteles[e]
 
                     if !ele then continue end
 
                     if ((ele.AttPosMods or {})[k.Slot] or {}).vpos then
                         vmelemod = ele.AttPosMods[k.Slot].vpos
-                        if self.MirrorVMWM then
+                        if mirrorvmwm then
                             wmelemod = ele.AttPosMods[k.Slot].vpos
                         end
                     end
 
-                    if !self.MirrorVMWM then
-                        if ((ele.AttPosMods or {})[k.Slot] or {}).wpos then
-                            wmelemod = ele.AttPosMods[k.Slot].wpos
-                        end
+                    if !mirrorvmwm and ((ele.AttPosMods or {})[k.Slot] or {}).wpos then
+                        wmelemod = ele.AttPosMods[k.Slot].wpos
                     end
 
                     if ((ele.AttPosMods or {})[k.Slot] or {}).slide then
@@ -909,17 +914,17 @@ function SWEP:DrawCustomModel(wm, origin, angle)
                     end
                 end
 
-                if wm and !self.MirrorVMWM then
-                    offset = wmelemod or (attslot.Offset or {}).wpos or Vector(0, 0, 0)
+                if wm and !mirrorvmwm then
+                    offset = wmelemod or (attslot.Offset or {}).wpos or vector_origin
 
                     if attslot.SlideAmount then
-                        offset = LerpVector(delta, (slidemod or attslot.SlideAmount).wmin or Vector(0, 0, 0), (slidemod or attslot.SlideAmount).wmax or Vector(0, 0, 0))
+                        offset = LerpVector(delta, (slidemod or attslot.SlideAmount).wmin or vector_origin, (slidemod or attslot.SlideAmount).wmax or vector_origin)
                     end
                 else
-                    offset = vmelemod or (attslot.Offset or {}).vpos or Vector(0, 0, 0)
+                    offset = vmelemod or (attslot.Offset or {}).vpos or vector_origin
 
                     if attslot.SlideAmount then
-                        offset = LerpVector(delta, (slidemod or attslot.SlideAmount).vmin or Vector(0, 0, 0), (slidemod or attslot.SlideAmount).vmax or Vector(0, 0, 0))
+                        offset = LerpVector(delta, (slidemod or attslot.SlideAmount).vmin or vector_origin, (slidemod or attslot.SlideAmount).vmax or vector_origin)
                     end
 
                     attslot.VMOffsetPos = offset
@@ -952,12 +957,12 @@ function SWEP:DrawCustomModel(wm, origin, angle)
             end
         elseif bang and bpos then
 
-            local pos = offset or Vector(0, 0, 0)
-            local ang = k.OffsetAng or Angle(0, 0, 0)
+            local pos = offset or vector_origin
+            local ang = k.OffsetAng or angle_zero
 
             pos = pos * vscale
 
-            local moffset = (k.ModelOffset or Vector(0, 0, 0))
+            local moffset = (k.ModelOffset or vector_origin)
 
             apos = bpos + bang:Forward() * pos.x
             apos = apos + bang:Right() * pos.y

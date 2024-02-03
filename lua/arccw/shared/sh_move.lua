@@ -1,12 +1,15 @@
+local IsValid = IsValid
+local Lerp = Lerp
 
 function ArcCW.Move(ply, mv, cmd)
     local wpn = ply:GetActiveWeapon()
+    local wpntbl = wpn:GetTable()
 
     if !wpn.ArcCW then return end
 
     local s = 1
 
-    local sm = Lerp( ArcCW.ConVars["mult_movespeed"]:GetFloat(), 1, math.Clamp(wpn.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult") * wpn:GetBuff_Mult("Mult_MoveSpeed"), 0, 1) )
+    local sm = Lerp( ArcCW.ConVars["mult_movespeed"]:GetFloat(), 1, math.Clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1) )
 
     -- look, basically I made a bit of an oopsy and uh this is the best way to fix that
     s = s * sm
@@ -19,10 +22,11 @@ function ArcCW.Move(ply, mv, cmd)
 
     local blocksprint = false
 
-    if wpn:GetNWState() == ArcCW.STATE_SIGHTS or wpn:GetTriggerDelta() > 0 or
-        wpn:GetNWState() == ArcCW.STATE_CUSTOMIZE then
+    local nwstate = wpn:GetNWState()
+    if nwstate == ArcCW.STATE_SIGHTS or wpn:GetTriggerDelta() > 0 or
+        nwstate == ArcCW.STATE_CUSTOMIZE then
         blocksprint = true
-        s = s * Lerp( ArcCW.ConVars["mult_movespeedads"]:GetFloat() * (1-wpn:GetSightDelta()), 1, math.Clamp(wpn:GetBuff("SightedSpeedMult") * wpn:GetBuff_Mult("Mult_SightedMoveSpeed"), 0, 1) )
+        s = s * Lerp( ArcCW.ConVars["mult_movespeedads"]:GetFloat() * (1 - wpn:GetSightDelta()), 1, math.Clamp(wpn:GetBuff("SightedSpeedMult", _, _, wpntbl) * wpn:GetBuff_Mult("Mult_SightedMoveSpeed", wpntbl), 0, 1) )
     elseif shottime > 0 or wpn:GetGrenadePrimed() then
         blocksprint = true
 
@@ -48,7 +52,7 @@ function ArcCW.Move(ply, mv, cmd)
         local aftershottime = -shottime / delay
         shotdelta = math.Clamp(1 - aftershottime, 0, 1)
     end
-    local shootmove = Lerp( ArcCW.ConVars["mult_movespeedfire"]:GetFloat(), 1, math.Clamp(wpn:GetBuff("ShootSpeedMult"), 0.0001, 1) )
+    local shootmove = Lerp( ArcCW.ConVars["mult_movespeedfire"]:GetFloat(), 1, math.Clamp(wpn:GetBuff("ShootSpeedMult", _, _, wpntbl), 0.0001, 1) )
     s = s * Lerp(shotdelta, 1, shootmove)
 
     mv:SetMaxSpeed(basespd * s)
@@ -105,58 +109,70 @@ local function tgt_pos(ent, head)
     local mins, maxs = ent:WorldSpaceAABB()
     local pos = ent:WorldSpaceCenter()
     pos.z = pos.z + (maxs.z - mins.z) * 0.2 -- Aim at chest level
-    if head and ent:GetAttachment(ent:LookupAttachment("eyes")) ~= nil then
+    if head and ent:GetAttachment(ent:LookupAttachment("eyes")) != nil then
         pos = ent:GetAttachment(ent:LookupAttachment("eyes")).Pos
     end
     return pos
 end
 
 local lst = SysTime()
+local timescalecvar = GetConVar("host_timescale")
 
 function ArcCW.StartCommand(ply, ucmd)
     -- Sprint will not interrupt a runaway burst
     local wep = ply:GetActiveWeapon()
-    if ply:Alive() and IsValid(wep) and wep.ArcCW and wep:GetBurstCount() > 0
+
+    if !IsValid(wep) then return end
+
+    local weptbl = wep:GetTable()
+    if !weptbl.ArcCW then return end
+
+    if ply:Alive() and wep:GetBurstCount() > 0
             and ucmd:KeyDown(IN_SPEED) and wep:GetCurrentFiremode().RunawayBurst
             and !wep:CanShootWhileSprint() then
         ucmd:SetButtons(ucmd:GetButtons() - IN_SPEED)
     end
 
     -- Holster code
-    if IsValid(wep) and wep.ArcCW and wep:GetHolster_Time() != 0 and wep:GetHolster_Time() <= CurTime() and IsValid(wep:GetHolster_Entity()) then
+    local holstertime = wep:GetHolster_Time()
+
+    if holstertime != 0 and holstertime <= CurTime() and IsValid(wep:GetHolster_Entity()) then
         wep:SetHolster_Time(-math.huge)
         ucmd:SelectWeapon(wep:GetHolster_Entity())
     end
 
+    if !CLIENT then return end
 
     -- Aim assist
-    if CLIENT and IsValid(wep) and wep.ArcCW
-            and (wep:GetBuff("AimAssist", true) or (ArcCW.ConVars["aimassist"]:GetBool() and ply:GetInfoNum("arccw_aimassist_cl", 0) == 1))  then
-        local cone = wep:GetBuff("AimAssist", true) and wep:GetBuff("AimAssist_Cone") or ArcCW.ConVars["aimassist_cone"]:GetFloat()
-        local dist = wep:GetBuff("AimAssist", true) and wep:GetBuff("AimAssist_Distance") or ArcCW.ConVars["aimassist_distance"]:GetFloat()
-        local inte = wep:GetBuff("AimAssist", true) and wep:GetBuff("AimAssist_Intensity") or ArcCW.ConVars["aimassist_intensity"]:GetFloat()
-        local head = wep:GetBuff("AimAssist", true) and wep:GetBuff("AimAssist_Head") or ArcCW.ConVars["aimassist_head"]:GetBool()
+    local aimassist = wep:GetBuff("AimAssist", true, _, weptbl)
+
+    if aimassist or (ArcCW.ConVars["aimassist"]:GetBool() and ply:GetInfoNum("arccw_aimassist_cl", 0) == 1) then
+        local cone = aimassist and wep:GetBuff("AimAssist_Cone", _, _, weptbl) or ArcCW.ConVars["aimassist_cone"]:GetFloat()
+        local dist = aimassist and wep:GetBuff("AimAssist_Distance", _, _, weptbl) or ArcCW.ConVars["aimassist_distance"]:GetFloat()
+        local inte = aimassist and wep:GetBuff("AimAssist_Intensity", _, _, weptbl) or ArcCW.ConVars["aimassist_intensity"]:GetFloat()
+        local head = aimassist and wep:GetBuff("AimAssist_Head", _, _, weptbl) or ArcCW.ConVars["aimassist_head"]:GetBool()
 
         -- Check if current target is beyond tracking cone
         local tgt = ply.ArcCW_AATarget
-        if IsValid(tgt) and (tgt_pos(tgt, head) - ply:EyePos()):Cross(ply:EyeAngles():Forward()):Length() > cone * 2 then ply.ArcCW_AATarget = nil end -- lost track
+        local eyepos = ply:EyePos()
+        if IsValid(tgt) and (tgt_pos(tgt, head) - eyepos):Cross(ply:EyeAngles():Forward()):Length() > cone * 2 then ply.ArcCW_AATarget = nil end -- lost track
 
         -- Try to seek target if not exists
         tgt = ply.ArcCW_AATarget
-        if !IsValid(tgt) or (tgt.Health and tgt:Health() <= 0) or util.QuickTrace(ply:EyePos(), tgt_pos(tgt, head) - ply:EyePos(), ply).Entity ~= tgt then
+        if !IsValid(tgt) or (tgt.Health and tgt:Health() <= 0) or util.QuickTrace(eyepos, tgt_pos(tgt, head) - eyepos, ply).Entity != tgt then
             local min_diff
             ply.ArcCW_AATarget = nil
-            for _, ent in ipairs(ents.FindInCone(ply:EyePos(), ply:EyeAngles():Forward(), dist, math.cos(math.rad(cone)))) do
+            for _, ent in ipairs(ents.FindInCone(eyepos, ply:EyeAngles():Forward(), dist, math.cos(math.rad(cone)))) do
                 if ent == ply or (!ent:IsNPC() and !ent:IsNextBot() and !ent:IsPlayer()) or ent:Health() <= 0
-                        or (ent:IsPlayer() and ent:Team() ~= TEAM_UNASSIGNED and ent:Team() == ply:Team()) then continue end
+                        or (ent:IsPlayer() and ent:Team() != TEAM_UNASSIGNED and ent:Team() == ply:Team()) then continue end
                 local tr = util.TraceLine({
-                    start = ply:EyePos(),
+                    start = eyepos,
                     endpos = tgt_pos(ent, head),
                     mask = MASK_SHOT,
                     filter = ply
                 })
-                if tr.Entity ~= ent then continue end
-                local diff = (tgt_pos(ent, head) - ply:EyePos()):Cross(ply:EyeAngles():Forward()):Length()
+                if tr.Entity != ent then continue end
+                local diff = (tgt_pos(ent, head) - eyepos):Cross(ply:EyeAngles():Forward()):Length()
                 if !ply.ArcCW_AATarget or diff < min_diff then
                     ply.ArcCW_AATarget = ent
                     min_diff = diff
@@ -166,11 +182,12 @@ function ArcCW.StartCommand(ply, ucmd)
 
         -- Aim towards target
         tgt = ply.ArcCW_AATarget
-        if wep:GetState() ~= ArcCW.STATE_CUSTOMIZE and wep:GetState() ~= ArcCW.STATE_SPRINT and IsValid(tgt) then
+        local state = wep:GetState()
+        if state != ArcCW.STATE_CUSTOMIZE and state != ArcCW.STATE_SPRINT and IsValid(tgt) then
             local ang = ucmd:GetViewAngles()
             local pos = tgt_pos(tgt, head)
-            local tgt_ang = (pos - ply:EyePos()):Angle()
-            local ang_diff = (pos - ply:EyePos()):Cross(ply:EyeAngles():Forward()):Length()
+            local tgt_ang = (pos - eyepos):Angle()
+            local ang_diff = (pos - eyepos):Cross(ply:EyeAngles():Forward()):Length()
             if ang_diff > 0.1 then
                 ang = LerpAngle(math.Clamp(inte / ang_diff, 0, 1), ang, tgt_ang)
                 ucmd:SetViewAngles(ang)
@@ -178,21 +195,20 @@ function ArcCW.StartCommand(ply, ucmd)
         end
     end
 
-    if CLIENT and IsValid(wep) and wep.ArcCW then
-        local ang2 = ucmd:GetViewAngles()
-        local ft = (SysTime() - (lst or SysTime())) * GetConVar("host_timescale"):GetFloat()
+    local ang2 = ucmd:GetViewAngles()
+    local ft = (SysTime() - (lst or SysTime())) * timescalecvar:GetFloat()
 
-        local recoil = Angle()
-        recoil = recoil + (wep:GetBuff_Override("Override_RecoilDirection") or wep.RecoilDirection) * wep.RecoilAmount
-        recoil = recoil + (wep:GetBuff_Override("Override_RecoilDirectionSide") or wep.RecoilDirectionSide) * wep.RecoilAmountSide
-        ang2 = ang2 - (recoil * ft * 30)
-        ucmd:SetViewAngles(ang2)
+    local recoil = angle_zero
+    local r = wep.RecoilAmount
+    local rs = wep.RecoilAmountSide
+    recoil = recoil + (wep:GetBuff_Override("Override_RecoilDirection", _, weptbl) or weptbl.RecoilDirection) * r
+    recoil = recoil + (wep:GetBuff_Override("Override_RecoilDirectionSide", _, weptbl) or weptbl.RecoilDirectionSide) * rs
+    ang2 = ang2 - (recoil * ft * 30)
+    ucmd:SetViewAngles(ang2)
 
-        local r = wep.RecoilAmount
-        local rs = wep.RecoilAmountSide
-        wep.RecoilAmount = math.Approach(wep.RecoilAmount, 0, ft * 20 * r)
-        wep.RecoilAmountSide = math.Approach(wep.RecoilAmountSide, 0, ft * 20 * rs)
-    end
+    weptbl.RecoilAmount = math.Approach(r, 0, ft * 20 * r)
+    weptbl.RecoilAmountSide = math.Approach(rs, 0, ft * 20 * rs)
+
     lst = SysTime()
 end
 

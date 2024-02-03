@@ -2,6 +2,7 @@ local mth      = math
 local m_rand   = mth.Rand
 local m_lerp   = Lerp
 local issingleplayer = game.SinglePlayer()
+local curgamemode = engine.ActiveGamemode()
 
 local function draw_debug()
     return (CLIENT or issingleplayer) and ArcCW.ConVars["dev_shootinfo"]:GetInt() >= 2
@@ -356,7 +357,7 @@ function ArcCW:BulletCallback(att, tr, dmg, bullet, phys)
 
     if dmgtable then
         local hg = tr.HitGroup
-        local gam = ArcCW.LimbCompensation[engine.ActiveGamemode()] or ArcCW.LimbCompensation[1]
+        local gam = ArcCW.LimbCompensation[curgamemode] or ArcCW.LimbCompensation[1]
         if dmgtable[hg] then
             dmg:ScaleDamage(dmgtable[hg])
 

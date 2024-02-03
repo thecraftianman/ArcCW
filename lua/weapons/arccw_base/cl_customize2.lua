@@ -35,6 +35,8 @@ local col_unowned_txt = col_block_txt
 
 local ss, rss, thicc
 
+local curgamemode = engine.ActiveGamemode()
+
 local function ScreenScaleMulti(input)
     return ScreenScale(input) * ArcCW.ConVars["hud_size"]:GetFloat()
 end
@@ -2187,7 +2189,7 @@ function SWEP:CreateCustomize2HUD()
                     self.Infos_Breakpoints = {}
 
                     local our = self:GetBuff_Override("Override_BodyDamageMults", self.BodyDamageMults)
-                    local gam = ArcCW.LimbCompensation[engine.ActiveGamemode()] or ArcCW.LimbCompensation[1]
+                    local gam = ArcCW.LimbCompensation[curgamemode] or ArcCW.LimbCompensation[1]
                     if our and ArcCW.ConVars["bodydamagemult_cancel"]:GetBool() then
                         gam = {}
                     elseif !our then
@@ -2994,7 +2996,7 @@ function SWEP:CreateCustomize2HUD()
             surface.DrawText(self2.Text)
         end
 
-        if engine.ActiveGamemode() == "terrortown" then
+        if curgamemode == "terrortown" then
             shoulddrawtitle = true
             local shop = vgui.Create("DButton", ArcCW.InvHUD)
             shop:SetSize(ss * 64, ss * 24)
@@ -3015,7 +3017,7 @@ function SWEP:CreateCustomize2HUD()
                 if RADIO then RADIO:ShowRadioCommands(!RADIO.Show) end
             end
             quickchat.Paint = paint_gmbutton
-        elseif engine.ActiveGamemode() == "darkrp" or DarkRP then
+        elseif curgamemode == "darkrp" or DarkRP then
             -- Check for the global table, as DarkRP has many derivatives
             shoulddrawtitle = true
             local drop = vgui.Create("DButton", ArcCW.InvHUD)

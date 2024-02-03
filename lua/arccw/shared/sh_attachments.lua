@@ -1,4 +1,5 @@
 ArcCW.AttachmentBlacklistTable = ArcCW.AttachmentBlacklistTable or {}
+local curgamemode = engine.ActiveGamemode()
 
 function ArcCW:PlayerCanAttach(ply, wep, attname, slot, detach)
     -- The global variable takes priority over everything
@@ -13,7 +14,7 @@ function ArcCW:PlayerCanAttach(ply, wep, attname, slot, detach)
     -- Allow hooks to block or force allow attachment usage
     local ret = hook.Run("ArcCW_PlayerCanAttach", ply, wep, attname, slot, detach)
 
-    if ret == nil and engine.ActiveGamemode() == "terrortown" then
+    if ret == nil and curgamemode == "terrortown" then
         local mode = ArcCW.ConVars["ttt_customizemode"]:GetInt()
         if mode == 1 and !ply.ArcCW_AllowCustomize then return false
         elseif mode == 2 and !ply.ArcCW_AllowCustomize and GetRoundState() == ROUND_ACTIVE then return false

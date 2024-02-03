@@ -1,4 +1,5 @@
 local issingleplayer = game.SinglePlayer()
+local curgamemode = engine.ActiveGamemode()
 
 SWEP.Sighted = false
 SWEP.Sprinted = false
@@ -12,7 +13,7 @@ function SWEP:GetSightTime()
 end
 
 function SWEP:EnterSprint()
-    if engine.ActiveGamemode() == "terrortown" and !(TTT2 and self:GetOwner().isSprinting) then return end
+    if curgamemode == "terrortown" and !(TTT2 and self:GetOwner().isSprinting) then return end
     if self:GetState() == ArcCW.STATE_SPRINT then return end
     if self:GetState() == ArcCW.STATE_CUSTOMIZE then return end
     if self:GetTriggerDelta() > 0 then return end
@@ -78,7 +79,7 @@ function SWEP:EnterSights()
     if !asight then return end
     if self:GetState() != ArcCW.STATE_IDLE then return end
     if self:GetCurrentFiremode().Mode == 0 then return end
-    if !self.ReloadInSights and (self:GetReloading() or self:GetOwner():KeyDown(IN_RELOAD)) then return end
+    if (self:GetReloading() or self:GetOwner():KeyDown(IN_RELOAD)) and !(self.ReloadInSights or self:GetBuff_Override("Override_ReloadInSights")) then return end
     if self.LockSightsInPriorityAnim and self:GetPriorityAnim() then return end
     if self:GetBuff_Hook("Hook_ShouldNotSight") then return end
     if (!issingleplayer and !IsFirstTimePredicted()) then return end
@@ -438,58 +439,61 @@ function SWEP:QuickFOVix( fov )
 end
 
 local fovcvar = GetConVar("fov_desired")
-SWEP.LastTranslateFOV = 0
+local lasttranslatefov = 0
+local currentfov = 0
+local currentvmfov = 0
 
 function SWEP:TranslateFOV(fov)
-    local irons = self:GetActiveSights()
+    if CLIENT and ArcCW.ConVars["dev_benchgun"]:GetBool() then
+        currentfov = fov
+        currentvmfov = fov
+        self.CurrentViewModelFOV = fov
+        return fov
+    end
 
-    if CLIENT and ArcCW.ConVars["dev_benchgun"]:GetBool() then self.CurrentFOV = fov self.CurrentViewModelFOV = fov return fov end
-
-    self.ApproachFOV = self.ApproachFOV or fov
-    self.CurrentFOV = self.CurrentFOV or fov
+    currentfov = currentfov or fov
+    local time = UnPredictedCurTime()
 
     -- Only update every tick (this function is called multiple times per tick)
-    if self.LastTranslateFOV == UnPredictedCurTime() then return self.CurrentFOV end
-    local timed = UnPredictedCurTime() - self.LastTranslateFOV
-    self.LastTranslateFOV = UnPredictedCurTime()
+    if lasttranslatefov == time then return currentfov end
+    local timed = time - lasttranslatefov
+    lasttranslatefov = time
 
-    local app_vm = self.ViewModelFOV + self:GetOwner():GetInfoNum("arccw_vm_fov", 0)
+    local vmfov = self.ViewModelFOV
+    local app_vm = vmfov + self:GetOwner():GetInfoNum("arccw_vm_fov", 0)
     if CLIENT then
         app_vm = app_vm * (LocalPlayer():GetFOV() / fovcvar:GetInt())
     end
 
-    if self:GetState() == ArcCW.STATE_SIGHTS then
+    if CLIENT and self:GetState() == ArcCW.STATE_SIGHTS then
         local asight = self:GetActiveSights()
         local mag = asight and asight.ScopeMagnification or 1
 
         local delta = math.pow(self:GetSightDelta(), 2)
 
-        if CLIENT then
-            local addads = math.Clamp(ArcCW.ConVars["vm_add_ads"]:GetFloat() or 0, -2, 14)
+        local addads = math.Clamp(ArcCW.ConVars["vm_add_ads"]:GetFloat() or 0, -2, 14)
+        local pfov = fovcvar:GetInt()
+
+        if ArcCW.ConVars["cheapscopes"]:GetBool() and mag > 1 then
             local csratio = math.Clamp(ArcCW.ConVars["cheapscopesv2_ratio"]:GetFloat() or 0, 0, 1)
-            local pfov = fovcvar:GetInt()
-
-            if ArcCW.ConVars["cheapscopes"]:GetBool() and mag > 1 then
-                fov = (pfov / (asight and asight.Magnification or 1)) / (mag / (1 + csratio * mag) + (addads or 0) / 3)
-            else
-                fov = ( (pfov / (asight and asight.Magnification or 1)) * (1 - delta)) + (pfov * delta)
-            end
-
-            app_vm = irons.ViewModelFOV or 45
-
-            app_vm = app_vm - (asight.MagnifiedOptic and (addads or 0) * 3 or 0)
+            fov = (pfov / (asight and asight.Magnification or 1)) / (mag / (1 + csratio * mag) + (addads or 0) / 3)
+        else
+            fov = ( (pfov / (asight and asight.Magnification or 1)) * (1 - delta)) + (pfov * delta)
         end
+
+        app_vm = asight.ViewModelFOV or 45
+
+        app_vm = app_vm - (asight.MagnifiedOptic and (addads or 0) * 3 or 0)
     end
 
-    self.ApproachFOV = fov
-
     -- magic number? multiplier of 10 seems similar to previous behavior
-    self.CurrentFOV = math.Approach(self.CurrentFOV, self.ApproachFOV, timed * 10 * (self.CurrentFOV - self.ApproachFOV))
+    currentfov = math.Approach(currentfov, fov, timed * 10 * (currentfov - fov))
 
-    self.CurrentViewModelFOV = self.CurrentViewModelFOV or self.ViewModelFOV
-    self.CurrentViewModelFOV = math.Approach(self.CurrentViewModelFOV, app_vm, timed * 10 * (self.CurrentViewModelFOV - app_vm))
+    currentvmfov = currentvmfov or vmfov
+    currentvmfov = math.Approach(currentvmfov, app_vm, timed * 10 * (currentvmfov - app_vm))
+    self.CurrentViewModelFOV = currentvmfov
 
-    return self.CurrentFOV
+    return currentfov
 end
 
 function SWEP:SetShouldHoldType()

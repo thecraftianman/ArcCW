@@ -1,43 +1,47 @@
 SWEP.Cam_Offset_Ang = nil --Angle(0, 0, 0)
 
-function SWEP:SelectAnimation(anim)
-    if self:GetNWState() == ArcCW.STATE_SIGHTS and self.Animations[anim .. "_iron"] then
+function SWEP:SelectAnimation(anim, stable)
+    stable = stable or self:GetTable()
+    local nwstate = self:GetNWState()
+    local anims = stable.Animations
+
+    if nwstate == ArcCW.STATE_SIGHTS and anims[anim .. "_iron"] then
         anim = anim .. "_iron"
     end
 
-    if self:GetNWState() == ArcCW.STATE_SIGHTS and self.Animations[anim .. "_sights"] then
+    if nwstate == ArcCW.STATE_SIGHTS and anims[anim .. "_sights"] then
         anim = anim .. "_sights"
     end
 
-    if self:GetNWState() == ArcCW.STATE_SIGHTS and self.Animations[anim .. "_sight"] then
+    if nwstate == ArcCW.STATE_SIGHTS and anims[anim .. "_sight"] then
         anim = anim .. "_sight"
     end
 
-    if self:GetNWState() == ArcCW.STATE_SPRINT and self.Animations[anim .. "_sprint"] and !self:CanShootWhileSprint() then
+    if nwstate == ArcCW.STATE_SPRINT and anims[anim .. "_sprint"] and !self:CanShootWhileSprint() then
         anim = anim .. "_sprint"
     end
 
-    if self:InBipod() and self.Animations[anim .. "_bipod"] then
+    if self:InBipod() and anims[anim .. "_bipod"] then
         anim = anim .. "_bipod"
     end
 
-    if self:GetState() == ArcCW.STATE_CUSTOMIZE and self.Animations[anim .. "_inspect"] and ((CLIENT and !ArcCW.ConVars["noinspect"]:GetBool()) or (SERVER and self:GetOwner():GetInfoNum("arccw_noinspect", 0))) then
+    if self:GetState() == ArcCW.STATE_CUSTOMIZE and anims[anim .. "_inspect"] and ((CLIENT and !ArcCW.ConVars["noinspect"]:GetBool()) or (SERVER and self:GetOwner():GetInfoNum("arccw_noinspect", 0))) then
         anim = anim .. "_inspect"
     end
 
-    if (self:Clip1() == 0 or (self:HasBottomlessClip() and self:Ammo1() == 0)) and self.Animations[anim .. "_empty"] then
+    if (self:Clip1() == 0 or (self:HasBottomlessClip() and self:Ammo1() == 0)) and anims[anim .. "_empty"] then
         anim = anim .. "_empty"
     end
 
-    if self:GetMalfunctionJam() and self.Animations[anim .. "_jammed"] then
+    if self:GetMalfunctionJam() and anims[anim .. "_jammed"] then
         anim = anim .. "_jammed"
     end
 
-    if self:GetBuff_Override("Override_TriggerDelay", self.TriggerDelay) and self:IsTriggerHeld() and self.Animations[anim .. "_trigger"] then
+    if self:GetBuff_Override("Override_TriggerDelay", stable.TriggerDelay, stable) and self:IsTriggerHeld() and anims[anim .. "_trigger"] then
         anim = anim .. "_trigger"
     end
 
-    if !self.Animations[anim] then return end
+    if !anims[anim] then return end
 
     return anim
 end
@@ -227,22 +231,23 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
     return true
 end
 
-function SWEP:PlayIdleAnimation(pred)
+function SWEP:PlayIdleAnimation(pred, stable)
+    stable = stable or self:GetTable()
     local ianim = self:SelectAnimation("idle")
     if self:GetGrenadePrimed() then
         ianim = self:GetGrenadeAlt() and self:SelectAnimation("pre_throw_hold_alt") or self:SelectAnimation("pre_throw_hold")
     end
 
     -- (key, mult, pred, startfrom, tt, skipholster, ignorereload)
-    if self:GetBuff_Override("UBGL_BaseAnims") and self:GetInUBGL()
-            and self.Animations.idle_ubgl_empty and self:Clip2() <= 0 then
+    local isubgl = self:GetBuff_Override("UBGL_BaseAnims", _, stable) and self:GetInUBGL()
+    if isubgl and stable.Animations.idle_ubgl_empty and self:Clip2() <= 0 then
         ianim = "idle_ubgl_empty"
-    elseif self:GetBuff_Override("UBGL_BaseAnims") and self:GetInUBGL() and self.Animations.idle_ubgl then
+    elseif isubgl and stable.Animations.idle_ubgl then
         ianim = "idle_ubgl"
     end
 
-    if self.LastAnimKey ~= ianim then
-        ianim = self:GetBuff_Hook("Hook_IdleReset", ianim) or ianim
+    if stable.LastAnimKey ~= ianim then
+        ianim = self:GetBuff_Hook("Hook_IdleReset", ianim, _, stable) or ianim
     end
 
     self:PlayAnimation(ianim, 1, pred, nil, nil, nil, true)

@@ -1,6 +1,7 @@
 if CLIENT then return end
 
 ArcCW.RandomWeaponCache = {}
+local curgamemode = engine.ActiveGamemode()
 
 hook.Add("PlayerSpawnedNPC", "ArcCW_PlayerSpawnedNPC", function( ply, ent )
     net.Start("arccw_npcgiverequest")
@@ -52,11 +53,11 @@ function ArcCW:GetRandomWeapon(wpn)
             end
 
             local weight = k.NPCWeight or 0
-            if engine.ActiveGamemode() == "terrortown" and k.TTTWeight then
+            if curgamemode == "terrortown" and k.TTTWeight then
                 weight = k.TTTWeight
             end
 
-            if wpn and engine.ActiveGamemode() == "terrortown" and k.TTTWeaponType then -- TTT weapon type(s) take priority over NPC weapon types
+            if wpn and curgamemode == "terrortown" and k.TTTWeaponType then -- TTT weapon type(s) take priority over NPC weapon types
                 if isstring(k.TTTWeaponType) then
                     if k.TTTWeaponType != wpn then continue end
                 elseif istable(k.TTTWeaponType) then
@@ -64,7 +65,7 @@ function ArcCW:GetRandomWeapon(wpn)
                 end
             elseif wpn and k.NPCWeaponType then
                 local class = wpn
-                if engine.ActiveGamemode() == "terrortown" and ArcCW.TTTReplaceTable[wpn] then
+                if curgamemode == "terrortown" and ArcCW.TTTReplaceTable[wpn] then
                     class = ArcCW.TTTReplaceTable[wpn]
                 end
                 if isstring(k.NPCWeaponType) then
@@ -123,7 +124,7 @@ hook.Add( "OnEntityCreated", "ArcCW_NPCWeaponReplacement", function(ent)
                 ent:Give(wpn)
             end
         end)
-    elseif ent:IsWeapon() and ((engine.ActiveGamemode() == "terrortown" and ArcCW.ConVars["ttt_replace"]:GetBool()) or (engine.ActiveGamemode() != "terrortown" and ArcCW.ConVars["npc_replace"]:GetBool())) then
+    elseif ent:IsWeapon() and ((curgamemode == "terrortown" and ArcCW.ConVars["ttt_replace"]:GetBool()) or (curgamemode != "terrortown" and ArcCW.ConVars["npc_replace"]:GetBool())) then
         timer.Simple(0, function()
             if !ent:IsValid() then return end
             if IsValid(ent:GetOwner()) then return end

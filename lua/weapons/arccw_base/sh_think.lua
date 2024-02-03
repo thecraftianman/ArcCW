@@ -18,22 +18,26 @@ function SWEP:Think()
 
     if !IsValid(owner) or owner:IsNPC() then return end
 
+    local stable = self:GetTable()
+
     if self:GetState() == ArcCW.STATE_DISABLE and !self:GetPriorityAnim() then
         self:SetState(ArcCW.STATE_IDLE)
 
-        if CLIENT and self.UnReady then
-            self.UnReady = false
+        if CLIENT and stable.UnReady then
+            stable.UnReady = false
         end
     end
 
     local curtime = CurTime()
     local isfirsttimepredicted = IsFirstTimePredicted()
-    local eventtbl = self.EventTable
+    local eventtbl = stable.EventTable
+    local lastanimkey = stable.LastAnimKey
+    local lastanimstart = stable.LastAnimStartTime
 
     for i, v in ipairs(eventtbl) do
         for ed, bz in pairs(v) do
             if ed <= curtime then
-                if bz.AnimKey and (bz.AnimKey != self.LastAnimKey or bz.StartTime != self.LastAnimStartTime) then
+                if bz.AnimKey and (bz.AnimKey != lastanimkey or bz.StartTime != lastanimstart) then
                     continue
                 end
                 self:PlayEvent(bz)
@@ -53,7 +57,7 @@ function SWEP:Think()
 
     local vm = owner:GetViewModel()
 
-    self.BurstCount = self:GetBurstCount()
+    stable.BurstCount = self:GetBurstCount()
 
     local sg = self:GetShotgunReloading()
     if (sg == 2 or sg == 4) and owner:KeyPressed(IN_ATTACK) then
@@ -62,16 +66,15 @@ function SWEP:Think()
         self:ReloadInsert((sg >= 4) and true or false)
     end
 
-    self:InBipod()
-
+    local inbipod = self:InBipod()
     local firemode = self:GetCurrentFiremode()
 
-    if self:GetNeedCycle() and !self.Throwing and !self:GetReloading() and self:GetWeaponOpDelay() < curtime and self:GetNextPrimaryFire() < curtime and -- Adding this delays bolting if the RPM is too low, but removing it may reintroduce the double pump bug. Increasing the RPM allows you to shoot twice on many multiplayer servers. Sure would be convenient if everything just worked nicely
+    if self:GetNeedCycle() and !stable.Throwing and !self:GetReloading() and self:GetWeaponOpDelay() < curtime and self:GetNextPrimaryFire() < curtime and -- Adding this delays bolting if the RPM is too low, but removing it may reintroduce the double pump bug. Increasing the RPM allows you to shoot twice on many multiplayer servers. Sure would be convenient if everything just worked nicely
             (!ArcCW.ConVars["clicktocycle"]:GetBool() and (firemode.Mode == 2 or !owner:KeyDown(IN_ATTACK))
             or ArcCW.ConVars["clicktocycle"]:GetBool() and (firemode.Mode == 2 or owner:KeyPressed(IN_ATTACK))) then
         local anim = self:SelectAnimation("cycle")
-        anim = self:GetBuff_Hook("Hook_SelectCycleAnimation", anim) or anim
-        local mult = self:GetBuff_Mult("Mult_CycleTime")
+        anim = self:GetBuff_Hook("Hook_SelectCycleAnimation", anim, _, stable) or anim
+        local mult = self:GetBuff_Mult("Mult_CycleTime", stable)
         local p = self:PlayAnimation(anim, mult, true, 0, true)
         if p then
             self:SetNeedCycle(false)
@@ -79,14 +82,16 @@ function SWEP:Think()
         end
     end
 
-    if self:GetGrenadePrimed() and !(owner:KeyDown(IN_ATTACK) or owner:KeyDown(IN_ATTACK2)) and (!issingleplayer or SERVER) then
+    local attack2down = owner:KeyDown(IN_ATTACK2)
+
+    if self:GetGrenadePrimed() and !(owner:KeyDown(IN_ATTACK) or attack2down) and (!issingleplayer or SERVER) then
         self:Throw()
     end
 
-    if self:GetGrenadePrimed() and self.GrenadePrimeTime > 0 and self.isCooked then
-        local heldtime = (curtime - self.GrenadePrimeTime)
+    if self:GetGrenadePrimed() and stable.GrenadePrimeTime > 0 and stable.isCooked then
+        local heldtime = (curtime - stable.GrenadePrimeTime)
 
-        local ft = self:GetBuff_Override("Override_FuseTime") or self.FuseTime
+        local ft = self:GetBuff_Override("Override_FuseTime", _, stable) or stable.FuseTime
 
         if ft and (heldtime >= ft) and (!issingleplayer or SERVER) then
             self:Throw()
@@ -94,15 +99,17 @@ function SWEP:Think()
     end
 
     if isfirsttimepredicted and self:GetNextPrimaryFire() < curtime and owner:KeyReleased(IN_USE) then
-        if self:InBipod() then
+        if inbipod then
             self:ExitBipod()
         else
             self:EnterBipod()
         end
     end
 
-    if ((issingleplayer and SERVER) or (!issingleplayer and true)) and self:GetBuff_Override("Override_TriggerDelay", self.TriggerDelay) then
-        if owner:KeyReleased(IN_ATTACK) and self:GetBuff_Override("Override_TriggerCharge", self.TriggerCharge) and self:GetTriggerDelta(true) >= 1 then
+    local attackreleased = owner:KeyReleased(IN_ATTACK)
+
+    if ((issingleplayer and SERVER) or (!issingleplayer and true)) and self:GetBuff_Override("Override_TriggerDelay", stable.TriggerDelay, stable) then
+        if attackreleased and self:GetBuff_Override("Override_TriggerCharge", stable.TriggerCharge, stable) and self:GetTriggerDelta(true) >= 1 then
             self:PrimaryAttack()
         else
             self:DoTriggerDelay()
@@ -115,20 +122,20 @@ function SWEP:Think()
             self:PrimaryAttack()
         end
 
-        if self:Clip1() < self:GetBuff("AmmoPerShot") or self:GetBurstCount() == self:GetBurstLength() then
+        if self:Clip1() < self:GetBuff("AmmoPerShot", _, _, stable) or self:GetBurstCount() == self:GetBurstLength() then
             self:SetBurstCount(0)
             if !firemode.AutoBurst then
-                self.Primary.Automatic = false
+                stable.Primary.Automatic = false
             end
         end
     end
 
-    if owner:KeyReleased(IN_ATTACK) then
+    if attackreleased then
 
         if !firemode.RunawayBurst then
             self:SetBurstCount(0)
-            self.LastTriggerTime = -1 -- Cannot fire again until trigger released
-            self.LastTriggerDuration = 0
+            stable.LastTriggerTime = -1 -- Cannot fire again until trigger released
+            stable.LastTriggerDuration = 0
         end
 
         if firemode.Mode < 0 and !firemode.RunawayBurst then
@@ -136,7 +143,7 @@ function SWEP:Think()
 
             if (curtime + postburst) > self:GetWeaponOpDelay() then
                 --self:SetNextPrimaryFire(curtime + postburst)
-                self:SetWeaponOpDelay(curtime + postburst * self:GetBuff_Mult("Mult_PostBurstDelay") + self:GetBuff_Add("Add_PostBurstDelay"))
+                self:SetWeaponOpDelay(curtime + postburst * self:GetBuff_Mult("Mult_PostBurstDelay", stable) + self:GetBuff_Add("Add_PostBurstDelay", stable))
             end
         end
     end
@@ -144,16 +151,15 @@ function SWEP:Think()
     if owner and owner:GetInfoNum("arccw_automaticreload", 0) == 1 and self:Clip1() == 0 and !self:GetReloading() and curtime > self:GetNextPrimaryFire() + 0.2 then
         self:Reload()
     end
-
-    local notreloadinsights = !(self:GetBuff_Override("Override_ReloadInSights") or self.ReloadInSights)
+    --[[
+    local notreloadinsights = !(self:GetBuff_Override("Override_ReloadInSights", _, stable) or stable.ReloadInSights)
     if (notreloadinsights and (self:GetReloading() or owner:KeyDown(IN_RELOAD))) then
         if notreloadinsights and self:GetReloading() then
             self:ExitSights()
         end
     end
-
-
-    if self:GetBuff_Hook("Hook_ShouldNotSight") and (self.Sighted or self:GetState() == ArcCW.STATE_SIGHTS) then
+    ]]
+    if (stable.Sighted or self:GetState() == ArcCW.STATE_SIGHTS) and self:GetBuff_Hook("Hook_ShouldNotSight", _, _, stable) then
         self:ExitSights()
     elseif self:GetHolster_Time() > 0 then
         self:ExitSights()
@@ -177,9 +183,9 @@ function SWEP:Think()
                 self:ExitSights()
             end
         elseif !toggle then
-            if (owner:KeyDown(IN_ATTACK2) and !suitzoom) and !sighted then
+            if (attack2down and !suitzoom) and !sighted then
                 self:EnterSights()
-            elseif (!owner:KeyDown(IN_ATTACK2) or suitzoom) and sighted then
+            elseif (!attack2down or suitzoom) and sighted then
                 self:ExitSights()
             end
         end
@@ -187,9 +193,11 @@ function SWEP:Think()
     end
 
     if (!issingleplayer and isfirsttimepredicted) or (issingleplayer and true) then
-        if self:InSprint() and (self:GetState() != ArcCW.STATE_SPRINT) then
+        local insprint = self:InSprint(stable)
+
+        if insprint and (self:GetState() != ArcCW.STATE_SPRINT) then
             self:EnterSprint()
-        elseif !self:InSprint() and (self:GetState() == ArcCW.STATE_SPRINT) then
+        elseif !insprint and (self:GetState() == ArcCW.STATE_SPRINT) then
             self:ExitSprint()
         end
     end
@@ -209,7 +217,7 @@ function SWEP:Think()
             vm:ManipulateBoneScale(i, vec1)
         end
 
-        for i, k in pairs(self:GetBuff_Override("Override_CaseBones", self.CaseBones) or {}) do
+        for i, k in pairs(self:GetBuff_Override("Override_CaseBones", stable.CaseBones, stable) or {}) do
             if !isnumber(i) then continue end
             for _, b in pairs(istable(k) and k or {k}) do
                 local bone = vm:LookupBone(b)
@@ -224,7 +232,7 @@ function SWEP:Think()
             end
         end
 
-        for i, k in pairs(self:GetBuff_Override("Override_BulletBones", self.BulletBones) or {}) do
+        for i, k in pairs(self:GetBuff_Override("Override_BulletBones", stable.BulletBones, stable) or {}) do
             if !isnumber(i) then continue end
             for _, b in pairs(istable(k) and k or {k}) do
                 local bone = vm:LookupBone(b)
@@ -239,7 +247,7 @@ function SWEP:Think()
             end
         end
 
-        for i, k in pairs(self:GetBuff_Override("Override_StripperClipBones", self.StripperClipBones) or {}) do
+        for i, k in pairs(self:GetBuff_Override("Override_StripperClipBones", stable.StripperClipBones, stable) or {}) do
             if !isnumber(i) then continue end
             for _, b in pairs(istable(k) and k or {k}) do
                 local bone = vm:LookupBone(b)
@@ -271,12 +279,13 @@ function SWEP:Think()
         -- end
     -- end
 
-    local eles = self.Attachments
+    local eles = stable.Attachments
 
     for i = 1, #eles do
         local k = eles[i]
-        if !k.Installed then continue end
-        local atttbl = ArcCW.AttachmentTable[k.Installed]
+        local installed = k.Installed
+        if !installed then continue end
+        local atttbl = ArcCW.AttachmentTable[installed]
 
         if atttbl.DamagePerSecond then
             local dmg = atttbl.DamagePerSecond * FrameTime()
@@ -289,9 +298,9 @@ function SWEP:Think()
         self:DoOurViewPunch()
     end
 
-    if self.Throwing and self:Clip1() == 0 and self:Ammo1() > 0 then
+    if stable.Throwing and self:Clip1() == 0 and self:Ammo1() > 0 then
         self:SetClip1(1)
-        owner:SetAmmo(self:Ammo1() - 1, self.Primary.Ammo)
+        owner:SetAmmo(self:Ammo1() - 1, stable.Primary.Ammo)
     end
 
     -- self:RefreshBGs()
@@ -301,10 +310,12 @@ function SWEP:Think()
         self:SetMagUpIn( 0 )
     end
 
-    if self:HasBottomlessClip() and self:Clip1() != ArcCW.BottomlessMagicNumber then
+    local hasbottomless = self:HasBottomlessClip()
+
+    if hasbottomless and self:Clip1() != ArcCW.BottomlessMagicNumber then
         self:Unload()
         self:SetClip1(ArcCW.BottomlessMagicNumber)
-    elseif !self:HasBottomlessClip() and self:Clip1() == ArcCW.BottomlessMagicNumber then
+    elseif !hasbottomless and self:Clip1() == ArcCW.BottomlessMagicNumber then
         self:SetClip1(0)
     end
 
@@ -314,7 +325,7 @@ function SWEP:Think()
         self:BarrelHitWall()
     end
 
-    self:GetBuff_Hook("Hook_Think")
+    self:GetBuff_Hook("Hook_Think", _, _, stable)
 
     -- Running this only serverside in SP breaks animation processing and causes CheckpointAnimation to !reset.
     --if SERVER or !issingleplayer then
@@ -322,10 +333,12 @@ function SWEP:Think()
     --end
 
     -- Only reset to idle if we don't need cycle. empty idle animation usually doesn't play nice
-    if self:GetNextIdle() != 0 and self:GetNextIdle() <= curtime and !self:GetNeedCycle()
+    local nextidle = self:GetNextIdle()
+
+    if nextidle != 0 and nextidle <= curtime and !self:GetNeedCycle()
             and self:GetHolster_Time() == 0 and self:GetShotgunReloading() == 0 then
         self:SetNextIdle(0)
-        self:PlayIdleAnimation(true)
+        self:PlayIdleAnimation(true, stable)
     end
 
     if self:GetUBGLDebounce() and !owner:KeyDown(IN_RELOAD) then
@@ -369,14 +382,14 @@ function SWEP:ProcessRecoil()
     lst = SysTime()
 end
 
-function SWEP:InSprint()
+function SWEP:InSprint(stable)
+    stable = stable or self:GetTable()
     local owner = self:GetOwner()
 
-    local sm = self.SpeedMult * self:GetBuff_Mult("Mult_SpeedMult") * self:GetBuff_Mult("Mult_MoveSpeed")
+    local sm = stable.SpeedMult * self:GetBuff_Mult("Mult_SpeedMult", stable) * self:GetBuff_Mult("Mult_MoveSpeed", stable)
 
     sm = math.Clamp(sm, 0, 1)
 
-    local sprintspeed = owner:GetRunSpeed() * sm
     local walkspeed = owner:GetWalkSpeed() * sm
 
     local curspeed = owner:GetVelocity():Length()
@@ -385,17 +398,20 @@ function SWEP:InSprint()
         return (owner.sprintProgress or 0) > 0 and owner:KeyDown(IN_SPEED) and !owner:Crouching() and curspeed > walkspeed and owner:OnGround()
     end
 
-    if !owner:KeyDown(IN_SPEED) or !owner:KeyDown(IN_FORWARD+IN_MOVELEFT+IN_MOVERIGHT+IN_BACK) then return false end
+    if !owner:KeyDown(IN_SPEED) or !owner:KeyDown(IN_FORWARD + IN_MOVELEFT + IN_MOVERIGHT + IN_BACK) then return false end
     if !owner:OnGround() then return false end
     if owner:Crouching() then return false end
+
+    local sprintspeed = owner:GetRunSpeed() * sm
+
     if curspeed < Lerp(0.5, walkspeed, sprintspeed) then
         -- provide some grace time so changing directions won't immediately exit sprint
-        self.LastExitSprintCheck = self.LastExitSprintCheck or CurTime()
-        if self.LastExitSprintCheck < CurTime() - 0.25 then
+        stable.LastExitSprintCheck = stable.LastExitSprintCheck or CurTime()
+        if stable.LastExitSprintCheck < CurTime() - 0.25 then
             return false
         end
     else
-        self.LastExitSprintCheck = nil
+        stable.LastExitSprintCheck = nil
     end
 
     return true
@@ -439,9 +455,10 @@ function SWEP:DoTriggerDelay()
     elseif self:GetNextPrimaryFire() < CurTime() and self.LastTriggerTime == 0 and shouldHold then
         -- We haven't played the animation yet. Pull it!
         local anim = self:SelectAnimation("trigger")
-        self:PlayAnimation(anim, self:GetBuff_Mult("Mult_TriggerDelayTime"), true, 0, nil, nil, true) -- need to overwrite sprint up
+        local delaymult = self:GetBuff_Mult("Mult_TriggerDelayTime")
+        self:PlayAnimation(anim, delaymult, true, 0, nil, nil, true) -- need to overwrite sprint up
         self.LastTriggerTime = CurTime()
-        self.LastTriggerDuration = self:GetAnimKeyTime(anim, true) * self:GetBuff_Mult("Mult_TriggerDelayTime")
+        self.LastTriggerDuration = self:GetAnimKeyTime(anim, true) * delaymult
         self:GetBuff_Hook("Hook_OnTriggerHeld")
     end
 end
