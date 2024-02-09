@@ -21,7 +21,7 @@ function SWEP:SelectAnimation(anim, stable)
         anim = anim .. "_sprint"
     end
 
-    if self:InBipod() and anims[anim .. "_bipod"] then
+    if anims[anim .. "_bipod"] and self:InBipod() then
         anim = anim .. "_bipod"
     end
 
@@ -29,15 +29,15 @@ function SWEP:SelectAnimation(anim, stable)
         anim = anim .. "_inspect"
     end
 
-    if (self:Clip1() == 0 or (self:HasBottomlessClip() and self:Ammo1() == 0)) and anims[anim .. "_empty"] then
+    if anims[anim .. "_empty"] and (self:Clip1() == 0 or (self:HasBottomlessClip() and self:Ammo1() == 0)) then
         anim = anim .. "_empty"
     end
 
-    if self:GetMalfunctionJam() and anims[anim .. "_jammed"] then
+    if anims[anim .. "_jammed"] and self:GetMalfunctionJam() then
         anim = anim .. "_jammed"
     end
 
-    if self:GetBuff_Override("Override_TriggerDelay", stable.TriggerDelay, stable) and self:IsTriggerHeld() and anims[anim .. "_trigger"] then
+    if anims[anim .. "_trigger"] and self:IsTriggerHeld() and self:GetBuff_Override("Override_TriggerDelay", stable.TriggerDelay, stable) then
         anim = anim .. "_trigger"
     end
 
@@ -69,6 +69,8 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
 
     if self:GetPriorityAnim() and !priority then return end
 
+    local owner = self:GetOwner()
+
     if issingleplayer and SERVER and pred then
         net.Start("arccw_sp_anim")
         net.WriteString(key)
@@ -77,7 +79,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
         net.WriteBool(tt)
         --net.WriteBool(skipholster) Unused
         net.WriteBool(priority)
-        net.Send(self:GetOwner())
+        net.Send(owner)
     end
 
     local anim = self.Animations[key]
@@ -93,13 +95,13 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
     end
 
     if anim.ViewPunchTable and CLIENT then
-        for k, v in pairs(anim.ViewPunchTable) do
+        for _, v in pairs(anim.ViewPunchTable) do
 
             if !v.t then continue end
 
             local st = (v.t * mult) - startfrom
 
-            if isnumber(v.t) and st >= 0 and self:GetOwner():IsPlayer() and (issingleplayer or IsFirstTimePredicted()) then
+            if isnumber(v.t) and st >= 0 and owner:IsPlayer() and (issingleplayer or IsFirstTimePredicted()) then
                 self:SetTimer(st, function() self:OurViewPunch(v.p or Vector(0, 0, 0)) end, id)
             end
         end
@@ -111,15 +113,15 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
             if self.RevolverReload then
                 num = self.Primary.ClipSize - self:Clip1()
             end
-            for i = 1,num do
+            for _ = 1, num do
                 self:DoShellEject()
             end
         end)
     end
 
-    if !self:GetOwner() then return end
-    if !self:GetOwner().GetViewModel then return end
-    local vm = self:GetOwner():GetViewModel()
+    if !owner then return end
+    if !owner.GetViewModel then return end
+    local vm = owner:GetViewModel()
 
     if !vm then return end
     if !IsValid(vm) then return end
@@ -154,11 +156,13 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
         self.LHIKEndTime = ct + ttime
 
         if anim.LHIKTimeline then
-            self.LHIKTimeline = {}
+            local lhiktimeline = {}
 
-            for i, k in pairs(anim.LHIKTimeline) do
-                table.Add(self.LHIKTimeline, {t = (k.t or 0) * mult, lhik = k.lhik or 1})
+            for _, k in pairs(anim.LHIKTimeline) do
+                table.Add(lhiktimeline, {t = (k.t or 0) * mult, lhik = k.lhik or 1})
             end
+
+            self.LHIKTimeline = lhiktimeline
         else
             self.LHIKTimeline = {
                 {t = -math.huge, lhik = 1},
@@ -188,15 +192,15 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
     end
 
     if anim.TPAnim then
-        local aseq = self:GetOwner():SelectWeightedSequence(anim.TPAnim)
+        local aseq = owner:SelectWeightedSequence(anim.TPAnim)
         if aseq then
-            self:GetOwner():AddVCDSequenceToGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD, aseq, anim.TPAnimStartTime or 0, true )
+            owner:AddVCDSequenceToGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD, aseq, anim.TPAnimStartTime or 0, true )
             if !issingleplayer and SERVER then
                 net.Start("arccw_networktpanim")
-                    net.WriteEntity(self:GetOwner())
+                    net.WriteEntity(owner)
                     net.WriteUInt(aseq, 16)
                     net.WriteFloat(anim.TPAnimStartTime or 0)
-                net.SendPVS(self:GetOwner():GetPos())
+                net.SendPVS(owner:GetPos())
             end
         end
     end
@@ -233,17 +237,23 @@ end
 
 function SWEP:PlayIdleAnimation(pred, stable)
     stable = stable or self:GetTable()
-    local ianim = self:SelectAnimation("idle")
+    local ianim = self:SelectAnimation("idle", stable)
     if self:GetGrenadePrimed() then
-        ianim = self:GetGrenadeAlt() and self:SelectAnimation("pre_throw_hold_alt") or self:SelectAnimation("pre_throw_hold")
+        ianim = self:GetGrenadeAlt() and self:SelectAnimation("pre_throw_hold_alt", stable) or self:SelectAnimation("pre_throw_hold", stable)
     end
 
     -- (key, mult, pred, startfrom, tt, skipholster, ignorereload)
-    local isubgl = self:GetBuff_Override("UBGL_BaseAnims", _, stable) and self:GetInUBGL()
-    if isubgl and stable.Animations.idle_ubgl_empty and self:Clip2() <= 0 then
-        ianim = "idle_ubgl_empty"
-    elseif isubgl and stable.Animations.idle_ubgl then
-        ianim = "idle_ubgl"
+    local inubgl = self:GetInUBGL()
+
+    if inubgl then
+        local ubglanims = self:GetBuff_Override("UBGL_BaseAnims", _, stable)
+        local anims = stable.Animations
+
+        if ubglanims and anims.idle_ubgl_empty and self:Clip2() <= 0 then
+            ianim = "idle_ubgl_empty"
+        elseif ubglanims and anims.idle_ubgl then
+            ianim = "idle_ubgl"
+        end
     end
 
     if stable.LastAnimKey ~= ianim then

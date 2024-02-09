@@ -7,7 +7,6 @@ local vec0 = vec1 * 0
 local ang0 = Angle(0, 0, 0)
 local issingleplayer = game.SinglePlayer()
 
--- local lastUBGL = 0
 function SWEP:Think()
     local owner = self:GetOwner()
 
@@ -57,7 +56,7 @@ function SWEP:Think()
 
     local vm = owner:GetViewModel()
 
-    stable.BurstCount = self:GetBurstCount()
+    -- stable.BurstCount = self:GetBurstCount()
 
     local sg = self:GetShotgunReloading()
     if (sg == 2 or sg == 4) and owner:KeyPressed(IN_ATTACK) then
@@ -194,17 +193,28 @@ function SWEP:Think()
 
     if (!issingleplayer and isfirsttimepredicted) or (issingleplayer and true) then
         local insprint = self:InSprint(stable)
+        local sprintstate = self:GetState() == ArcCW.STATE_SPRINT
 
-        if insprint and (self:GetState() != ArcCW.STATE_SPRINT) then
+        if insprint and !sprintstate then
             self:EnterSprint()
-        elseif !insprint and (self:GetState() == ArcCW.STATE_SPRINT) then
+        elseif !insprint and sprintstate then
             self:ExitSprint()
         end
     end
 
     if issingleplayer or isfirsttimepredicted then
-        self:SetSightDelta(math.Approach(self:GetSightDelta(), self:GetState() == ArcCW.STATE_SIGHTS and 0 or 1, FrameTime() / self:GetSightTime()))
-        self:SetSprintDelta(math.Approach(self:GetSprintDelta(), self:GetState() == ArcCW.STATE_SPRINT and 1 or 0, FrameTime() / self:GetSprintTime()))
+        local state = self:GetState()
+        local sightstate = state == ArcCW.STATE_SIGHTS and 0 or 1
+        local sprintstate = state == ArcCW.STATE_SPRINT and 1 or 0
+        local sightdelta = self:GetSightDelta()
+        local sprintdelta = self:GetSprintDelta()
+
+        if sightdelta != sightstate then
+            self:SetSightDelta(math.Approach(sightdelta, sightstate, FrameTime() / self:GetSightTime()))
+        end
+        if sprintdelta != sprintstate then
+            self:SetSprintDelta(math.Approach(sprintdelta, sprintstate, FrameTime() / self:GetSprintTime()))
+        end
     end
 
     if CLIENT and (issingleplayer or isfirsttimepredicted) then
@@ -263,7 +273,7 @@ function SWEP:Think()
         end
     end
 
-    self:DoHeat()
+    self:DoHeat(stable)
 
     self:ThinkFreeAim()
 
@@ -383,24 +393,24 @@ function SWEP:ProcessRecoil()
 end
 
 function SWEP:InSprint(stable)
-    stable = stable or self:GetTable()
     local owner = self:GetOwner()
-
-    local sm = stable.SpeedMult * self:GetBuff_Mult("Mult_SpeedMult", stable) * self:GetBuff_Mult("Mult_MoveSpeed", stable)
-
-    sm = math.Clamp(sm, 0, 1)
-
-    local walkspeed = owner:GetWalkSpeed() * sm
-
-    local curspeed = owner:GetVelocity():Length()
-
-    if TTT2 and owner.isSprinting == true then
-        return (owner.sprintProgress or 0) > 0 and owner:KeyDown(IN_SPEED) and !owner:Crouching() and curspeed > walkspeed and owner:OnGround()
-    end
 
     if !owner:KeyDown(IN_SPEED) or !owner:KeyDown(IN_FORWARD + IN_MOVELEFT + IN_MOVERIGHT + IN_BACK) then return false end
     if !owner:OnGround() then return false end
     if owner:Crouching() then return false end
+
+    stable = stable or self:GetTable()
+    --local sm = stable.SpeedMult * self:GetBuff_Mult("Mult_SpeedMult", stable) * self:GetBuff_Mult("Mult_MoveSpeed", stable)
+
+    --sm = math.Clamp(sm, 0, 1)
+    local sm = owner.ArcCW_LastTickBaseSpeedMult
+
+    local walkspeed = owner:GetWalkSpeed() * sm
+    local curspeed = owner:GetVelocity():Length()
+
+    if TTT2 and owner.isSprinting == true then
+        return (owner.sprintProgress or 0) > 0 and owner:KeyDown(IN_SPEED) and curspeed > walkspeed
+    end
 
     local sprintspeed = owner:GetRunSpeed() * sm
 

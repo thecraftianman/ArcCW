@@ -5,10 +5,12 @@ function SWEP:InBipod()
     --     self:ExitBipod()
     -- end
 
-    local owner = self:GetOwner()
+    if bip then
+        local owner = self:GetOwner()
 
-    if IsValid(owner) and self:GetBipodPos() != owner:EyePos() then
-        self:ExitBipod()
+        if IsValid(owner) and self:GetBipodPos() != owner:EyePos() then
+            self:ExitBipod()
+        end
     end
 
     return bip

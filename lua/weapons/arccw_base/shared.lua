@@ -842,6 +842,7 @@ function SWEP:GetReloading()
 end
 
 function SWEP:SetBurstCount(b)
+    self.BurstCount = b
     self:SetBurstCountUM(b)
 end
 

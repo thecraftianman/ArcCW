@@ -1,4 +1,5 @@
 SWEP.Shields = {}
+local developercvar = GetConVar("developer")
 
 function SWEP:SetupShields()
     self:KillShields()
@@ -63,7 +64,7 @@ function SWEP:SetupShields()
             shield:SetAngles( self:GetOwner():GetAngles() + ang + (atttbl.ShieldCorrectAng or Angle(0, 0, 0)) )
             shield:SetCollisionGroup( COLLISION_GROUP_WORLD )
             shield.Weapon = self
-            if GetConVar("developer"):GetBool() then
+            if developercvar:GetBool() then
                 shield:SetColor( Color(0, 0, 0, 255) )
             else
                 shield:SetColor( Color(0, 0, 0, 0) )
@@ -110,7 +111,7 @@ function SWEP:SetupShields()
         shield:SetAngles( self:GetOwner():GetAngles() + ang )
         shield:SetCollisionGroup( COLLISION_GROUP_WORLD )
         shield.Weapon = self
-        if GetConVar("developer"):GetBool() then
+        if developercvar:GetBool() then
             shield:SetColor( Color(0, 0, 0, 255) )
         else
             shield:SetColor( Color(0, 0, 0, 0) )

@@ -786,7 +786,7 @@ function SWEP:DrawHolosight(hs, hsm, hsp, asight)
             screen = rtmat_cheap
 
             local addads = math.Clamp(additionalFOVconvar:GetFloat(), -2, 14)
-            local csratio = math.Clamp(GetConVar("arccw_cheapscopesv2_ratio"):GetFloat(), 0, 1)
+            local csratio = math.Clamp(ArcCW.ConVars["cheapscopesv2_ratio"]:GetFloat(), 0, 1)
 
             local ssmag = 1 + csratio * hsmag + (addads or 0) / 20 -- idk why 20
             local sw = ScrW() * ssmag

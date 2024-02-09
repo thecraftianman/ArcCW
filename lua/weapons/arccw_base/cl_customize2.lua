@@ -36,6 +36,7 @@ local col_unowned_txt = col_block_txt
 local ss, rss, thicc
 
 local curgamemode = engine.ActiveGamemode()
+local developercvar = GetConVar("developer")
 
 local function ScreenScaleMulti(input)
     return ScreenScale(input) * ArcCW.ConVars["hud_size"]:GetFloat()
@@ -2269,7 +2270,7 @@ function SWEP:CreateCustomize2HUD()
                     end
 
 
-                    if GetConVar("developer"):GetInt() > 0 then
+                    if developercvar:GetInt() > 0 then
                         print(dmgmax .. "-" .. dmgmin .. "DMG; range " .. mran .. "/" .. sran)
                         print("table range: " .. stk_min .. " - " .. stk_max .. " (" .. stk_count .. ")")
                         PrintTable(self.Infos_Breakpoints)

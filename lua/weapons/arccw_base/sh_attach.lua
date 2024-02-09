@@ -2,30 +2,30 @@
 ArcCW.BuffStack = false
 
 ArcCW.ConVar_BuffMults = {
-    ["Mult_Damage"] = "arccw_mult_damage",
-    ["Mult_DamageMin"] = "arccw_mult_damage",
-    ["Mult_DamageNPC"] = "arccw_mult_npcdamage",
-    ["Mult_HipDispersion"] = "arccw_mult_hipfire",
-    ["Mult_ReloadTime"] = "arccw_mult_reloadtime",
-    ["Mult_SightTime"] = "arccw_mult_sighttime",
-    ["Mult_RPM"] = "arccw_mult_rpm",
-    ["Mult_CycleTime"] = "arccw_mult_rpm",
-    ["Mult_Range"] = "arccw_mult_range",
-    ["Mult_Recoil"] = "arccw_mult_recoil",
-    ["Mult_MoveDispersion"] = "arccw_mult_movedisp",
-    ["Mult_AccuracyMOA"] = "arccw_mult_accuracy",
-    ["Mult_Penetration"] = "arccw_mult_penetration",
-    ["Mult_Sway"] = "arccw_mult_sway",
-    ["Mult_MeleeDamage"] = "arccw_mult_meleedamage",
-    ["Mult_MeleeTime"] = "arccw_mult_meleetime",
+    ["Mult_Damage"] = ArcCW.ConVars["mult_damage"],
+    ["Mult_DamageMin"] = ArcCW.ConVars["mult_damage"],
+    ["Mult_DamageNPC"] = ArcCW.ConVars["mult_npcdamage"],
+    ["Mult_HipDispersion"] = ArcCW.ConVars["mult_hipfire"],
+    ["Mult_ReloadTime"] = ArcCW.ConVars["mult_reloadtime"],
+    ["Mult_SightTime"] = ArcCW.ConVars["mult_sighttime"],
+    ["Mult_RPM"] = ArcCW.ConVars["mult_rpm"],
+    ["Mult_CycleTime"] = ArcCW.ConVars["mult_rpm"],
+    ["Mult_Range"] = ArcCW.ConVars["mult_range"],
+    ["Mult_Recoil"] = ArcCW.ConVars["mult_recoil"],
+    ["Mult_MoveDispersion"] = ArcCW.ConVars["mult_movedisp"],
+    ["Mult_AccuracyMOA"] = ArcCW.ConVars["mult_accuracy"],
+    ["Mult_Penetration"] = ArcCW.ConVars["mult_penetration"],
+    ["Mult_Sway"] = ArcCW.ConVars["mult_sway"],
+    ["Mult_MeleeDamage"] = ArcCW.ConVars["mult_meleedamage"],
+    ["Mult_MeleeTime"] = ArcCW.ConVars["mult_meleetime"],
 }
 
 ArcCW.ConVar_BuffAdds = {
-    ["Add_Sway"] = "arccw_add_sway",
+    ["Add_Sway"] = ArcCW.ConVars["add_sway"],
 }
 
 ArcCW.ConVar_BuffOverrides = {
-    ["Override_ShootWhileSprint"] = "arccw_mult_shootwhilesprinting"
+    ["Override_ShootWhileSprint"] = ArcCW.ConVars["mult_shootwhilesprinting"]
 }
 
 SWEP.TickCache_Overrides = {}
@@ -235,6 +235,11 @@ function SWEP:GetBuff_Override(buff, default, stable)
             local out = (self:GetBuff_Hook("O_Hook_" .. buff, {buff = buff}, _, stable) or {})
             current = out.current or current
             winningslot = out.winningslot or winningslot
+
+            if !out.current and !out.winningslot then
+                -- NOTE: Testing; I think it just doesn't exist here?
+                stable.ModifiedCache[buff] = true
+            end
             ArcCW.BuffStack = false
         end
 
@@ -254,10 +259,14 @@ function SWEP:GetBuff_Override(buff, default, stable)
         }
 
         if !ArcCW.BuffStack then
-
             ArcCW.BuffStack = true
 
-            local out = (self:GetBuff_Hook("O_Hook_" .. buff, data, _, stable) or {})
+            local out = bufftbl[3]
+            if !out then
+                -- NOTE: Testing; this might break stuff!
+                out = (self:GetBuff_Hook("O_Hook_" .. buff, data, _, stable) or {})
+                bufftbl[3] = out
+            end
 
             current = out.current or current
             winningslot = out.winningslot or winningslot
@@ -393,16 +402,18 @@ function SWEP:GetBuff_Mult(buff, stable)
         end
         if ArcCW.ConVar_BuffMults[buff] then
             if buff == "Mult_CycleTime" then
-                mult = mult / GetConVar(ArcCW.ConVar_BuffMults[buff]):GetFloat()
+                mult = mult / ArcCW.ConVar_BuffMults[buff]:GetFloat()
             else
-                mult = mult * GetConVar(ArcCW.ConVar_BuffMults[buff]):GetFloat()
+                mult = mult * ArcCW.ConVar_BuffMults[buff]:GetFloat()
             end
         end
         return mult
     end
 
-    if stable.TickCache_Mults[buff] then
-        mult = stable.TickCache_Mults[buff]
+    local bufftbl = stable.TickCache_Mults[buff]
+
+    if bufftbl then
+        mult = bufftbl
         local data = {
             buff = buff,
             mult = mult
@@ -420,9 +431,9 @@ function SWEP:GetBuff_Mult(buff, stable)
 
         if ArcCW.ConVar_BuffMults[buff] then
             if buff == "Mult_CycleTime" then
-                mult = mult / GetConVar(ArcCW.ConVar_BuffMults[buff]):GetFloat()
+                mult = mult / ArcCW.ConVar_BuffMults[buff]:GetFloat()
             else
-                mult = mult * GetConVar(ArcCW.ConVar_BuffMults[buff]):GetFloat()
+                mult = mult * ArcCW.ConVar_BuffMults[buff]:GetFloat()
             end
         end
 
@@ -476,9 +487,9 @@ function SWEP:GetBuff_Mult(buff, stable)
 
     if ArcCW.ConVar_BuffMults[buff] then
         if buff == "Mult_CycleTime" then
-            mult = mult / GetConVar(ArcCW.ConVar_BuffMults[buff]):GetFloat()
+            mult = mult / ArcCW.ConVar_BuffMults[buff]:GetFloat()
         else
-            mult = mult * GetConVar(ArcCW.ConVar_BuffMults[buff]):GetFloat()
+            mult = mult * ArcCW.ConVar_BuffMults[buff]:GetFloat()
         end
     end
 
@@ -511,7 +522,7 @@ function SWEP:GetBuff_Add(buff, stable)
             ArcCW.BuffStack = false
         end
         if ArcCW.ConVar_BuffAdds[buff] then
-            add = add + GetConVar(ArcCW.ConVar_BuffAdds[buff]):GetFloat()
+            add = add + ArcCW.ConVar_BuffAdds[buff]:GetFloat()
         end
         return add
     end
@@ -535,7 +546,7 @@ function SWEP:GetBuff_Add(buff, stable)
         end
 
         if ArcCW.ConVar_BuffAdds[buff] then
-            add = add + GetConVar(ArcCW.ConVar_BuffAdds[buff]):GetFloat()
+            add = add + ArcCW.ConVar_BuffAdds[buff]:GetFloat()
         end
 
         return add
@@ -583,7 +594,7 @@ function SWEP:GetBuff_Add(buff, stable)
     end
 
     if ArcCW.ConVar_BuffAdds[buff] then
-        add = add + GetConVar(ArcCW.ConVar_BuffAdds[buff]):GetFloat()
+        add = add + ArcCW.ConVar_BuffAdds[buff]:GetFloat()
     end
 
     local data = {
@@ -912,7 +923,9 @@ function SWEP:RefreshBGs()
     local vmp = self.DefaultPoseParams
     local wmp = self.DefaultWMPoseParams
 
-    if self.MirrorVMWM then
+    local mirrorvmwm = self.MirrorVMWM
+
+    if mirrorvmwm then
         wmm = vmm
         wmc = vmc
         wms = vms
@@ -940,24 +953,29 @@ function SWEP:RefreshBGs()
     self:SetColor(wmc)
     self:SetSkin(wms)
 
-    if self.WMModel and self.WMModel:IsValid() then
-        ArcCW.SetBodyGroups(self.WMModel, self.MirrorVMWM and self.DefaultBodygroups or self.DefaultWMBodygroups)
+    local wmmodel = self.WMModel
+    local wmvalid = IsValid(wmmodel)
 
-        self.WMModel:SetMaterial(wmm)
-        self.WMModel:SetColor(wmc)
-        self.WMModel:SetSkin(wms)
+    if wmmodel and wmvalid then
+        ArcCW.SetBodyGroups(wmmodel, mirrorvmwm and self.DefaultBodygroups or self.DefaultWMBodygroups)
+
+        wmmodel:SetMaterial(wmm)
+        wmmodel:SetColor(wmc)
+        wmmodel:SetSkin(wms)
 
         wmp["BaseClass"] = nil
 
         for i, k in pairs(wmp) do
-            self.WMModel:SetPoseParameter(i, k)
+            wmmodel:SetPoseParameter(i, k)
         end
     end
 
     local ae = self:GetActiveElements()
+    local atteles = self.AttachmentElements
 
-    for _, e in pairs(ae) do
-        local ele = self.AttachmentElements[e]
+    for j = 1, #ae do
+        local e = ae[j]
+        local ele = atteles[e]
 
         if !ele then continue end
 
@@ -968,17 +986,17 @@ function SWEP:RefreshBGs()
             end
         end
 
-        if self.WMModel and self.WMModel:IsValid() then
-            if self.MirrorVMWM and ele.VMPoseParams then
+        if wmmodel and wmvalid then
+            if mirrorvmwm and ele.VMPoseParams then
                 ele.VMPoseParams["BaseClass"] = nil
                 for i, k in pairs(ele.VMPoseParams) do
-                    self.WMModel:SetPoseParameter(i, k)
+                    wmmodel:SetPoseParameter(i, k)
                 end
             end
             if ele.WMPoseParams then
                 ele.WMPoseParams["BaseClass"] = nil
                 for i, k in pairs(ele.WMPoseParams) do
-                    self.WMModel:SetPoseParameter(i, k)
+                    wmmodel:SetPoseParameter(i, k)
                 end
             end
         end
@@ -987,13 +1005,13 @@ function SWEP:RefreshBGs()
             vm:SetSkin(ele.VMSkin)
         end
 
-        if self.WMModel and self.WMModel:IsValid() then
-            if self.MirrorVMWM and ele.VMSkin then
-                self.WMModel:SetSkin(ele.VMSkin)
+        if wmmodel and wmvalid then
+            if mirrorvmwm and ele.VMSkin then
+                wmmodel:SetSkin(ele.VMSkin)
                 self:SetSkin(ele.VMSkin)
             end
             if ele.WMSkin then
-                self.WMModel:SetSkin(ele.WMSkin)
+                wmmodel:SetSkin(ele.WMSkin)
                 self:SetSkin(ele.WMSkin)
             end
         end
@@ -1002,13 +1020,13 @@ function SWEP:RefreshBGs()
             vm:SetColor(ele.VMColor)
         end
 
-        if self.WMModel and self.WMModel:IsValid() then
-            if self.MirrorVMWM and ele.VMSkin then
-                self.WMModel:SetColor(ele.VMColor or color_white)
+        if wmmodel and wmvalid then
+            if mirrorvmwm and ele.VMSkin then
+                wmmodel:SetColor(ele.VMColor or color_white)
                 self:SetColor(ele.VMColor or color_white)
             end
             if ele.WMSkin then
-                self.WMModel:SetColor(ele.WMColor or color_white)
+                wmmodel:SetColor(ele.WMColor or color_white)
                 self:SetColor(ele.WMColor or color_white)
             end
         end
@@ -1017,13 +1035,13 @@ function SWEP:RefreshBGs()
             vm:SetMaterial(ele.VMMaterial)
         end
 
-        if self.WMModel and self.WMModel:IsValid() then
-            if self.MirrorVMWM and ele.VMMaterial then
-                self.WMModel:SetMaterial(ele.VMMaterial)
+        if wmmodel and wmvalid then
+            if mirrorvmwm and ele.VMMaterial then
+                wmmodel:SetMaterial(ele.VMMaterial)
                 self:SetMaterial(ele.VMMaterial)
             end
             if ele.WMMaterial then
-                self.WMModel:SetMaterial(ele.WMMaterial)
+                wmmodel:SetMaterial(ele.WMMaterial)
                 self:SetMaterial(ele.WMMaterial)
             end
         end
@@ -1037,12 +1055,12 @@ function SWEP:RefreshBGs()
                 end
             end
 
-            if self.MirrorVMWM then
+            if mirrorvmwm then
                 for _, i in pairs(ele.VMBodygroups) do
                     if !i.ind or !i.bg then continue end
 
-                    if self.WMModel and IsValid(self.WMModel) and self.WMModel:GetBodygroup(i.ind) != i.bg then
-                        self.WMModel:SetBodygroup(i.ind, i.bg)
+                    if wmmodel and wmvalid and wmmodel:GetBodygroup(i.ind) != i.bg then
+                        wmmodel:SetBodygroup(i.ind, i.bg)
                     end
 
                     if self:GetBodygroup(i.ind) != i.bg then
@@ -1056,8 +1074,8 @@ function SWEP:RefreshBGs()
             for _, i in pairs(ele.WMBodygroups) do
                 if !i.ind or !i.bg then continue end
 
-                if self.WMModel and IsValid(self.WMModel) and self.WMModel:GetBodygroup(i.ind) != i.bg then
-                    self.WMModel:SetBodygroup(i.ind, i.bg)
+                if wmmodel and wmvalid and wmmodel:GetBodygroup(i.ind) != i.bg then
+                    wmmodel:SetBodygroup(i.ind, i.bg)
                 end
 
                 if self:GetBodygroup(i.ind) != i.bg then
@@ -1075,9 +1093,9 @@ function SWEP:RefreshBGs()
                 vm:ManipulateBonePosition(boneind, i)
             end
 
-            if self.MirrorVMWM then
+            if mirrorvmwm then
                 for bone, i in pairs(ele.VMBoneMods) do
-                    if !(self.WMModel and self.WMModel:IsValid()) then break end
+                    if !(wmmodel and wmvalid) then break end
                     local boneind = self:LookupBone(bone)
 
                     if !boneind then continue end
@@ -1089,7 +1107,7 @@ function SWEP:RefreshBGs()
 
         if ele.WMBoneMods then
             for bone, i in pairs(ele.WMBoneMods) do
-                if !(self.WMModel and self.WMModel:IsValid()) then break end
+                if !(wmmodel and wmvalid) then break end
                 local boneind = self:LookupBone(bone)
 
                 if !boneind then continue end
@@ -1103,25 +1121,26 @@ function SWEP:RefreshBGs()
         end
     end
 
-    local tpmdl = IsValid(self.WMModel) and self.WMModel or self
+    local tpmdl = wmvalid and wmmodel or self
+    local bodygroups = self.Bodygroups
 
     if IsValid(vm) then
         for i = 0, (vm:GetNumBodyGroups()) do
-            if self.Bodygroups[i] then
-                vm:SetBodygroup(i, self.Bodygroups[i])
+            if bodygroups[i] then
+                vm:SetBodygroup(i, bodygroups[i])
             end
         end
         self:GetBuff_Hook("Hook_ModifyBodygroups", {vm = vm, eles = ae, wm = false})
     end
 
     for i = 0, (tpmdl:GetNumBodyGroups()) do
-        if self.Bodygroups[i] then
-            tpmdl:SetBodygroup(i, self.Bodygroups[i])
+        if bodygroups[i] then
+            tpmdl:SetBodygroup(i, bodygroups[i])
         end
     end
     self:GetBuff_Hook("Hook_ModifyBodygroups", {vm = tpmdl, eles = ae, wm = true})
 
-    for slot, v in pairs(self.Attachments) do
+    for slot, v in ipairs(self.Attachments) do
         if !v.Installed then continue end
 
         local func = self:GetBuff_Stat("Hook_ModifyAttBodygroups", slot)

@@ -1,5 +1,6 @@
 local IsValid = IsValid
 local Lerp = Lerp
+local m_clamp = math.Clamp
 
 function ArcCW.Move(ply, mv, cmd)
     local wpn = ply:GetActiveWeapon()
@@ -7,16 +8,14 @@ function ArcCW.Move(ply, mv, cmd)
 
     if !wpn.ArcCW then return end
 
-    local s = 1
-
-    local sm = Lerp( ArcCW.ConVars["mult_movespeed"]:GetFloat(), 1, math.Clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1) )
-
-    -- look, basically I made a bit of an oopsy and uh this is the best way to fix that
-    s = s * sm
-
     local basespd = (Vector(cmd:GetForwardMove(), cmd:GetUpMove(), cmd:GetSideMove())):Length()
     basespd = math.min(basespd, mv:GetMaxClientSpeed())
 
+    if basespd == 0 then return end -- The player isn't moving, so we don't have to make any further changes
+
+    local s = m_clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1)
+    ply.ArcCW_LastTickBaseSpeedMult = s
+    s = Lerp( ArcCW.ConVars["mult_movespeed"]:GetFloat(), 1, m_clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1) )
     local shotdelta = 0 -- how close should we be to the shoot speed mult
     local shottime = wpn:GetNextPrimaryFireSlowdown() - CurTime()
 
@@ -26,7 +25,7 @@ function ArcCW.Move(ply, mv, cmd)
     if nwstate == ArcCW.STATE_SIGHTS or wpn:GetTriggerDelta() > 0 or
         nwstate == ArcCW.STATE_CUSTOMIZE then
         blocksprint = true
-        s = s * Lerp( ArcCW.ConVars["mult_movespeedads"]:GetFloat() * (1 - wpn:GetSightDelta()), 1, math.Clamp(wpn:GetBuff("SightedSpeedMult", _, _, wpntbl) * wpn:GetBuff_Mult("Mult_SightedMoveSpeed", wpntbl), 0, 1) )
+        s = s * Lerp( ArcCW.ConVars["mult_movespeedads"]:GetFloat() * (1 - wpn:GetSightDelta()), 1, m_clamp(wpn:GetBuff("SightedSpeedMult", _, _, wpntbl) * wpn:GetBuff_Mult("Mult_SightedMoveSpeed", wpntbl), 0, 1) )
     elseif shottime > 0 or wpn:GetGrenadePrimed() then
         blocksprint = true
 
@@ -50,10 +49,13 @@ function ArcCW.Move(ply, mv, cmd)
         -- recover from firing slowdown after shadow duration
         local delay = wpn:GetFiringDelay()
         local aftershottime = -shottime / delay
-        shotdelta = math.Clamp(1 - aftershottime, 0, 1)
+        shotdelta = m_clamp(1 - aftershottime, 0, 1)
     end
-    local shootmove = Lerp( ArcCW.ConVars["mult_movespeedfire"]:GetFloat(), 1, math.Clamp(wpn:GetBuff("ShootSpeedMult", _, _, wpntbl), 0.0001, 1) )
-    s = s * Lerp(shotdelta, 1, shootmove)
+
+    if shotdelta != 0 then
+        local shootmove = Lerp( ArcCW.ConVars["mult_movespeedfire"]:GetFloat(), 1, m_clamp(wpn:GetBuff("ShootSpeedMult", _, _, wpntbl), 0.0001, 1) )
+        s = s * Lerp(shotdelta, 1, shootmove)
+    end
 
     mv:SetMaxSpeed(basespd * s)
     mv:SetMaxClientSpeed(basespd * s)
@@ -127,8 +129,8 @@ function ArcCW.StartCommand(ply, ucmd)
     local weptbl = wep:GetTable()
     if !weptbl.ArcCW then return end
 
-    if ply:Alive() and wep:GetBurstCount() > 0
-            and ucmd:KeyDown(IN_SPEED) and wep:GetCurrentFiremode().RunawayBurst
+    if ply:Alive() and ucmd:KeyDown(IN_SPEED)
+            and wep:GetBurstCount() > 0 and wep:GetCurrentFiremode().RunawayBurst
             and !wep:CanShootWhileSprint() then
         ucmd:SetButtons(ucmd:GetButtons() - IN_SPEED)
     end
@@ -189,7 +191,7 @@ function ArcCW.StartCommand(ply, ucmd)
             local tgt_ang = (pos - eyepos):Angle()
             local ang_diff = (pos - eyepos):Cross(ply:EyeAngles():Forward()):Length()
             if ang_diff > 0.1 then
-                ang = LerpAngle(math.Clamp(inte / ang_diff, 0, 1), ang, tgt_ang)
+                ang = LerpAngle(m_clamp(inte / ang_diff, 0, 1), ang, tgt_ang)
                 ucmd:SetViewAngles(ang)
             end
         end

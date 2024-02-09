@@ -502,6 +502,7 @@ end
 
 local head = Material("particle/fire")
 local tracer = Material("effects/smoke_trail")
+local developercvar = GetConVar("developer")
 
 function ArcCW:DrawPhysBullets()
     cam.Start3D()
@@ -546,7 +547,7 @@ function ArcCW:DrawPhysBullets()
                 dampfraction = (i.Travelled / i.DampenVelocity) ^ 0.5
                 rpos = LerpVector(dampfraction, i.TracerOrigin or i.PosStart, i.Pos)
 
-                if GetConVar("developer"):GetInt() >= 2 then
+                if developercvar:GetInt() >= 2 then
                     debugoverlay.Cross(i.TracerOrigin, 2, 5, Color(255, 0, 0), true)
                     debugoverlay.Cross(rpos, 8, 5, Color(0, 255, 255), true)
                     debugoverlay.Line(rpos, i.Pos, 5, Color(250, 150, 255), true)

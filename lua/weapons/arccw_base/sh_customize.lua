@@ -1725,7 +1725,7 @@ function SWEP:CreateCustomizeHUD()
     local function defaultStatFunc(name, unit, round)
         local orig = self[name]
         if ArcCW.ConVar_BuffMults["Mult_" .. name] then
-            orig = orig * GetConVar(ArcCW.ConVar_BuffMults["Mult_" .. name]):GetFloat()
+            orig = orig * ArcCW.ConVar_BuffMults["Mult_" .. name]:GetFloat()
         end
         return math.Round((unit == "%" and 100 or unit == "ms" and 1000 or 1) * orig, round) .. (unit or ""),
                math.Round((unit == "%" and 100 or unit == "ms" and 1000 or 1) * self[name] * self:GetBuff_Mult("Mult_" .. name), round) .. (unit or "")
@@ -1734,7 +1734,7 @@ function SWEP:CreateCustomizeHUD()
     local function defaultBetterFunc(name, inverse)
         local mult = self:GetBuff_Mult("Mult_" .. name)
         if ArcCW.ConVar_BuffMults[name] then
-            mult = mult / GetConVar(ArcCW.ConVar_BuffMults[name]):GetFloat()
+            mult = mult / ArcCW.ConVar_BuffMults[name]:GetFloat()
         end
         if inverse then mult = 1 / mult end
         if mult > 1 then return true

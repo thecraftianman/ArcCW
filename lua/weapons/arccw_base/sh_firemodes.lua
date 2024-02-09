@@ -111,7 +111,7 @@ function SWEP:GetCurrentFiremode(stable)
     local fmt = self:GetBuff_Override("Override_Firemodes", stable.Firemodes, stable)
     fmt.BaseClass = nil
 
-    if fm > table.Count(fmt) or fm < 1 then
+    if fm > #fmt or fm < 1 then
         self:SetFireMode(1)
         fm = 1
     end

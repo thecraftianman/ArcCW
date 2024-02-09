@@ -72,20 +72,22 @@ function SWEP:AddHeat(a)
     end
 end
 
-function SWEP:DoHeat()
-    if self.NextHeatDissipateTime > CurTime() then return end
+function SWEP:DoHeat(stable)
+    stable = stable or self:GetTable()
+    local nextdiss = stable.NextHeatDissipateTime
+    if nextdiss > CurTime() or nextdiss == 0 then return end
 
     --local diss = self.HeatDissipation or 2
     --diss = diss * self:GetBuff_Mult("Mult_HeatDissipation")
-    local diss = self:GetBuff("HeatDissipation") or 2
+    local diss = self:GetBuff("HeatDissipation", _, _, stable) or 2
     local ft = FrameTime()
-    self.Heat = self:GetHeat() - (ft * diss)
+    stable.Heat = self:GetHeat() - (ft * diss)
 
-    self.Heat = math.max(self.Heat, 0)
+    stable.Heat = math.max(stable.Heat, 0)
 
-    self:SetHeat(self.Heat)
+    self:SetHeat(stable.Heat)
 
-    if self.Heat <= 0 and self:GetHeatLocked() then
+    if stable.Heat <= 0 and self:GetHeatLocked() then
         self:SetHeatLocked(false)
     end
 end
@@ -129,7 +131,7 @@ function SWEP:DoMalfunction(post)
         else
             -- Burst and semi only guns are less likely to jam
             local a, b = false, false
-            for k, v in pairs(self.Firemodes) do
+            for _, v in pairs(self.Firemodes) do
                 if !v.Mode then continue end
                 if v.Mode == 2 then a = true
                 elseif v.Mode < 0 then b = true end

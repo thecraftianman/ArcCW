@@ -1,9 +1,10 @@
 local ang0 = Angle(0, 0, 0)
 SWEP.ClientFreeAimAng = Angle(ang0)
 
-function SWEP:ShouldFreeAim()
+function SWEP:ShouldFreeAim(stable)
+    stable = stable or self:GetTable()
     if self:GetOwner():IsNPC() then return false end
-    if (ArcCW.ConVars["freeaim"]:GetInt() == 0 or self:GetBuff_Override("NeverFreeAim", self.NeverFreeAim))  and !self:GetBuff_Override("AlwaysFreeAim", self.AlwaysFreeAim) then return false end
+    if (ArcCW.ConVars["freeaim"]:GetInt() == 0 or self:GetBuff_Override("NeverFreeAim", stable.NeverFreeAim, stable))  and !self:GetBuff_Override("AlwaysFreeAim", stable.AlwaysFreeAim, stable) then return false end
     return true
 end
 
@@ -13,44 +14,44 @@ function SWEP:FreeAimMaxAngle()
 end
 
 function SWEP:ThinkFreeAim()
-    if self:ShouldFreeAim() then
-        local diff = self:GetOwner():EyeAngles() - self:GetLastAimAngle()
-        --diff = diff * 2
+    if !self:ShouldFreeAim() then return end
 
-        local freeaimang = Angle(self:GetFreeAimAngle())
+    local eyeang = self:GetOwner():EyeAngles()
+    local diff = eyeang - self:GetLastAimAngle()
+    --diff = diff * 2
 
-        local max = self:FreeAimMaxAngle()
+    local freeaimang = Angle(self:GetFreeAimAngle())
 
-        local delta = math.min(self:GetSightDelta(),
-                self:CanShootWhileSprint() and 1 or (1 - self:GetSprintDelta()),
-                self:GetState() == ArcCW.STATE_CUSTOMIZE and 0 or 1)
+    local max = self:FreeAimMaxAngle()
 
-        max = max * delta
+    local delta = math.min(self:GetSightDelta(),
+        self:CanShootWhileSprint() and 1 or (1 - self:GetSprintDelta()),
+        self:GetState() == ArcCW.STATE_CUSTOMIZE and 0 or 1)
 
-        diff.p = math.NormalizeAngle(diff.p)
-        diff.y = math.NormalizeAngle(diff.y)
+    max = max * delta
 
-        diff = diff * Lerp(delta, 1, 0.25)
+    diff.p = math.NormalizeAngle(diff.p)
+    diff.y = math.NormalizeAngle(diff.y)
 
-        freeaimang.p = math.Clamp(math.NormalizeAngle(freeaimang.p) + math.NormalizeAngle(diff.p), -max, max)
-        freeaimang.y = math.Clamp(math.NormalizeAngle(freeaimang.y) + math.NormalizeAngle(diff.y), -max, max)
+    diff = diff * Lerp(delta, 1, 0.25)
 
-        local ang2d = math.atan2(freeaimang.p, freeaimang.y)
-        local mag2d = math.sqrt(math.pow(freeaimang.p, 2) + math.pow(freeaimang.y, 2))
+    freeaimang.p = math.Clamp(math.NormalizeAngle(freeaimang.p) + math.NormalizeAngle(diff.p), -max, max)
+    freeaimang.y = math.Clamp(math.NormalizeAngle(freeaimang.y) + math.NormalizeAngle(diff.y), -max, max)
 
-        mag2d = math.min(mag2d, max)
+    local ang2d = math.atan2(freeaimang.p, freeaimang.y)
+    local mag2d = math.sqrt(math.pow(freeaimang.p, 2) + math.pow(freeaimang.y, 2))
 
-        freeaimang.p = mag2d * math.sin(ang2d)
-        freeaimang.y = mag2d * math.cos(ang2d)
+    mag2d = math.min(mag2d, max)
 
-        self:SetFreeAimAngle(freeaimang)
+    freeaimang.p = mag2d * math.sin(ang2d)
+    freeaimang.y = mag2d * math.cos(ang2d)
 
-        if CLIENT then
-            self.ClientFreeAimAng = freeaimang
-        end
+    self:SetFreeAimAngle(freeaimang)
+    self:SetLastAimAngle(eyeang)
+
+    if CLIENT then
+        self.ClientFreeAimAng = freeaimang
     end
-
-    self:SetLastAimAngle(self:GetOwner():EyeAngles())
 end
 
 function SWEP:GetFreeAimOffset()
