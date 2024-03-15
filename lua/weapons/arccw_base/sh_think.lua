@@ -2,6 +2,7 @@ if CLIENT then
     ArcCW.LastWeapon = nil
 end
 
+local IsValid = IsValid
 local vec1 = Vector(1, 1, 1)
 local vec0 = vec1 * 0
 local ang0 = Angle(0, 0, 0)
@@ -9,11 +10,6 @@ local issingleplayer = game.SinglePlayer()
 
 function SWEP:Think()
     local owner = self:GetOwner()
-
-    if IsValid(owner) and self:GetClass() == "arccw_base" then
-        self:Remove()
-        return
-    end
 
     if !IsValid(owner) or owner:IsNPC() then return end
 
@@ -33,7 +29,8 @@ function SWEP:Think()
     local lastanimkey = stable.LastAnimKey
     local lastanimstart = stable.LastAnimStartTime
 
-    for i, v in ipairs(eventtbl) do
+    for i = 1, #eventtbl do
+        local v = eventtbl[i]
         for ed, bz in pairs(v) do
             if ed <= curtime then
                 if bz.AnimKey and (bz.AnimKey != lastanimkey or bz.StartTime != lastanimstart) then
@@ -275,7 +272,7 @@ function SWEP:Think()
 
     self:DoHeat(stable)
 
-    self:ThinkFreeAim()
+    self:ThinkFreeAim(stable)
 
     -- if CLIENT then
         -- if !IsValid(ArcCW.InvHUD) then
@@ -315,12 +312,14 @@ function SWEP:Think()
 
     -- self:RefreshBGs()
 
-    if self:GetMagUpIn() != 0 and curtime > self:GetMagUpIn() then
+    local magupin = self:GetMagUpIn()
+
+    if magupin != 0 and curtime > magupin then
         self:ReloadTimed()
         self:SetMagUpIn( 0 )
     end
 
-    local hasbottomless = self:HasBottomlessClip()
+    local hasbottomless = self:HasBottomlessClip(stable)
 
     if hasbottomless and self:Clip1() != ArcCW.BottomlessMagicNumber then
         self:Unload()
@@ -339,7 +338,7 @@ function SWEP:Think()
 
     -- Running this only serverside in SP breaks animation processing and causes CheckpointAnimation to !reset.
     --if SERVER or !issingleplayer then
-        self:ProcessTimers()
+        self:ProcessTimers(stable)
     --end
 
     -- Only reset to idle if we don't need cycle. empty idle animation usually doesn't play nice
@@ -403,7 +402,7 @@ function SWEP:InSprint(stable)
     --local sm = stable.SpeedMult * self:GetBuff_Mult("Mult_SpeedMult", stable) * self:GetBuff_Mult("Mult_MoveSpeed", stable)
 
     --sm = math.Clamp(sm, 0, 1)
-    local sm = owner.ArcCW_LastTickBaseSpeedMult
+    local sm = stable.TickCache_Mults.BaseSpeedMult or 1
 
     local walkspeed = owner:GetWalkSpeed() * sm
     local curspeed = owner:GetVelocity():Length()

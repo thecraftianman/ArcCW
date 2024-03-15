@@ -55,7 +55,7 @@ end
 
 local issingleplayer = game.SinglePlayer()
 
-function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priority, absolute)
+function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priority, absolute, stable)
     mult = mult or 1
     pred = pred or false
     startfrom = startfrom or 0
@@ -82,26 +82,31 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
         net.Send(owner)
     end
 
-    local anim = self.Animations[key]
+    stable = stable or self:GetTable()
+    local animtbl = stable.Animations
+    local anim = animtbl[key]
     if !anim then return end
-    local tranim = self:GetBuff_Hook("Hook_TranslateAnimation", key)
-    if self.Animations[tranim] then
+    local tranim = self:GetBuff_Hook("Hook_TranslateAnimation", key, _, stable)
+    if animtbl[tranim] then
         key = tranim
-        anim = self.Animations[tranim]
+        anim = animtbl[tranim]
     --[[elseif self.Animations[key] then -- Can't do due to backwards compatibility... unless you have a better idea?
         anim = self.Animations[key]
     else
         return]]
     end
 
-    if anim.ViewPunchTable and CLIENT then
-        for _, v in pairs(anim.ViewPunchTable) do
+    local viewpunchtbl = anim.ViewPunchTable
+    if CLIENT and anim.ViewPunchTable then
+        local ownerplayer = owner:IsPlayer()
+
+        for _, v in pairs(viewpunchtbl) do
 
             if !v.t then continue end
 
             local st = (v.t * mult) - startfrom
 
-            if isnumber(v.t) and st >= 0 and owner:IsPlayer() and (issingleplayer or IsFirstTimePredicted()) then
+            if isnumber(v.t) and st >= 0 and ownerplayer and (issingleplayer or IsFirstTimePredicted()) then
                 self:SetTimer(st, function() self:OurViewPunch(v.p or Vector(0, 0, 0)) end, id)
             end
         end
@@ -110,8 +115,8 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
     if isnumber(anim.ShellEjectAt) then
         self:SetTimer(anim.ShellEjectAt * mult, function()
             local num = 1
-            if self.RevolverReload then
-                num = self.Primary.ClipSize - self:Clip1()
+            if stable.RevolverReload then
+                num = stable.Primary.ClipSize - self:Clip1()
             end
             for _ = 1, num do
                 self:DoShellEject()
@@ -130,7 +135,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
     if anim.RareSource and util.SharedRandom("raresource", 0, 1, CurTime()) < (1 / (anim.RareSourceChance or 100)) then
         seq = anim.RareSource
     end
-    seq = self:GetBuff_Hook("Hook_TranslateSequence", seq)
+    seq = self:GetBuff_Hook("Hook_TranslateSequence", seq, _, stable)
 
     if istable(seq) then
         seq["BaseClass"] = nil
@@ -152,8 +157,8 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
     end
 
     if anim.LHIK then
-        self.LHIKStartTime = ct
-        self.LHIKEndTime = ct + ttime
+        stable.LHIKStartTime = ct
+        stable.LHIKEndTime = ct + ttime
 
         if anim.LHIKTimeline then
             local lhiktimeline = {}
@@ -162,9 +167,9 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
                 table.Add(lhiktimeline, {t = (k.t or 0) * mult, lhik = k.lhik or 1})
             end
 
-            self.LHIKTimeline = lhiktimeline
+            stable.LHIKTimeline = lhiktimeline
         else
-            self.LHIKTimeline = {
+            stable.LHIKTimeline = {
                 {t = -math.huge, lhik = 1},
                 {t = ((anim.LHIKIn or 0.1) - (anim.LHIKEaseIn or anim.LHIKIn or 0.1)) * mult, lhik = 1},
                 {t = (anim.LHIKIn or 0.1) * mult, lhik = 0},
@@ -174,21 +179,21 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
             }
 
             if anim.LHIKIn == 0 then
-                self.LHIKTimeline[1].lhik = -math.huge
-                self.LHIKTimeline[2].lhik = -math.huge
+                stable.LHIKTimeline[1].lhik = -math.huge
+                stable.LHIKTimeline[2].lhik = -math.huge
             end
 
             if anim.LHIKOut == 0 then
-                self.LHIKTimeline[#self.LHIKTimeline - 1].lhik = math.huge
-                self.LHIKTimeline[#self.LHIKTimeline].lhik = math.huge
+                stable.LHIKTimeline[#stable.LHIKTimeline - 1].lhik = math.huge
+                stable.LHIKTimeline[#stable.LHIKTimeline].lhik = math.huge
             end
         end
     else
-        self.LHIKTimeline = nil
+        stable.LHIKTimeline = nil
     end
 
     if anim.LastClip1OutTime then
-        self.LastClipOutTime = ct + ((anim.LastClip1OutTime * mult) - startfrom)
+        stable.LastClipOutTime = ct + ((anim.LastClip1OutTime * mult) - startfrom)
     end
 
     if anim.TPAnim then
@@ -205,29 +210,29 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priorit
         end
     end
 
-    if !(issingleplayer and CLIENT) and (issingleplayer or IsFirstTimePredicted() or self.ReadySoundTableHack) then
+    if !(issingleplayer and CLIENT) and (issingleplayer or IsFirstTimePredicted() or stable.ReadySoundTableHack) then
         self:PlaySoundTable(anim.SoundTable or {}, 1 / mult, startfrom, key)
-        self.ReadySoundTableHack = nil
+        stable.ReadySoundTableHack = nil
     end
 
     if seq then
         vm:SendViewModelMatchingSequence(seq)
         local dur = vm:SequenceDuration()
         vm:SetPlaybackRate(math.Clamp(dur / (ttime + startfrom), -4, 12))
-        self.LastAnimStartTime = ct
-        self.LastAnimFinishTime = ct + dur
-        self.LastAnimKey = key
+        stable.LastAnimStartTime = ct
+        stable.LastAnimFinishTime = ct + dur
+        stable.LastAnimKey = key
     end
 
     -- Grabs the current angle of the cam attachment bone and use it as the common offset for all cambone changes.
     -- Problem: If this animation interrupted a previous animation with cambone movement,
     -- it will start with an incorrect offset and snap at the end.
     -- Therefore this now only ever sets it once.
-    local att = self:GetBuff_Override("Override_CamAttachment", self.CamAttachment)
-    if att and vm:GetAttachment(att) and (anim.ForceCamReset or self.Cam_Offset_Ang == nil) then
+    local att = self:GetBuff_Override("Override_CamAttachment", stable.CamAttachment, _, stable)
+    if att and vm:GetAttachment(att) and (anim.ForceCamReset or stable.Cam_Offset_Ang == nil) then
         local ang = vm:GetAttachment(att).Ang
         ang = vm:WorldToLocalAngles(ang)
-        self.Cam_Offset_Ang = Angle(ang)
+        stable.Cam_Offset_Ang = Angle(ang)
     end
 
     self:SetNextIdle(CurTime() + ttime)
@@ -260,7 +265,7 @@ function SWEP:PlayIdleAnimation(pred, stable)
         ianim = self:GetBuff_Hook("Hook_IdleReset", ianim, _, stable) or ianim
     end
 
-    self:PlayAnimation(ianim, 1, pred, nil, nil, nil, true)
+    self:PlayAnimation(ianim, 1, pred, nil, nil, nil, true, stable)
 end
 
 function SWEP:GetAnimKeyTime(key, min)

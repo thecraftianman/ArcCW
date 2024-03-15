@@ -209,9 +209,10 @@ function SWEP:Unload()
     self:SetClip1(0)
 end
 
-function SWEP:HasBottomlessClip()
+function SWEP:HasBottomlessClip(stable)
     if ArcCW.ConVars["mult_bottomlessclip"]:GetBool() then return true end
-    if self.BottomlessClip or self:GetBuff_Override("Override_BottomlessClip") then return true end
+    stable = stable or self:GetTable()
+    if stable.BottomlessClip or self:GetBuff_Override("Override_BottomlessClip", _, stable) then return true end
     return false
 end
 

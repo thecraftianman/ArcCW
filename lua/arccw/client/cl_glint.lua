@@ -1,30 +1,24 @@
-local rnd        = render
-local r_lightcol = rnd.GetLightColor
+local rnd         = render
+local r_lightcol  = rnd.GetLightColor
+local IsValid     = IsValid
+local LocalPlayer = LocalPlayer
 
 local glintmat = Material("effects/blueflare1")
 
-local players
-local playerssaver = {}
-
 hook.Add("PostDrawEffects", "ArcCW_ScopeGlint", function()
-    if playerssaver != players then -- less calls on GetAll
-        players      = player.GetAll()
-        playerssaver = players
-    end
+    local locPly = LocalPlayer()
 
     cam.Start3D()
-        for _, ply in ipairs(players) do
-            if !IsValid(ply) then continue end
-
-            if ply == LocalPlayer() and !ply:ShouldDrawLocalPlayer() then continue end
+        for _, ply in player.Iterator() do
+            if ply == locPly and !ply:ShouldDrawLocalPlayer() then continue end
 
             local wep = ply:GetActiveWeapon()
 
             if !(IsValid(wep) and wep.ArcCW) then continue end
 
-            if !wep:GetBuff_Override("ScopeGlint") then continue end
-
             if wep:GetState() != ArcCW.STATE_SIGHTS then continue end
+
+            if !wep:GetBuff_Override("ScopeGlint") then continue end
 
             local vec = (ply:EyePos() - EyePos()):GetNormalized()
             local dot = vec:Dot(-ply:EyeAngles():Forward())

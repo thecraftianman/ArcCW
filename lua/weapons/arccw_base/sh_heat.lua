@@ -75,7 +75,7 @@ end
 function SWEP:DoHeat(stable)
     stable = stable or self:GetTable()
     local nextdiss = stable.NextHeatDissipateTime
-    if nextdiss > CurTime() or nextdiss == 0 then return end
+    if nextdiss == 0 or nextdiss > CurTime() then return end
 
     --local diss = self.HeatDissipation or 2
     --diss = diss * self:GetBuff_Mult("Mult_HeatDissipation")

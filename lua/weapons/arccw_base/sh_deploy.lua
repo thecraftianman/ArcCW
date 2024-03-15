@@ -3,7 +3,14 @@ local issingleplayer = game.SinglePlayer()
 local dev_alwaysready = ArcCW.ConVars["dev_alwaysready"]
 
 function SWEP:Deploy()
-    if !IsValid(self:GetOwner()) or self:GetOwner():IsNPC() then
+    local owner = self:GetOwner()
+
+    if SERVER and IsValid(owner) and self:GetClass() == "arccw_base" then
+        self:Remove()
+        return
+    end
+
+    if !IsValid(owner) or owner:IsNPC() then
         return
     end
 
@@ -49,7 +56,7 @@ function SWEP:Deploy()
     self:WepSwitchCleanup()
     if issingleplayer then self:CallOnClient("WepSwitchCleanup") end
 
-    if !self:GetOwner():InVehicle() then -- Don't play anim if in vehicle. This can be caused by HL2 level changes
+    if !owner:InVehicle() then -- Don't play anim if in vehicle. This can be caused by HL2 level changes
         local prd = false
 
         local r_anim = self:SelectAnimation("ready")
@@ -103,8 +110,8 @@ function SWEP:Deploy()
         -- Also not a good idea because networking many weapons will cause mass lag (e.g. TTT round setup)
         -- Instead, make client send a request when it is valid there
         --self:NetworkWeapon()
-        self:GetOwner():SetSaveValue("m_flNextAttack", 0) -- the magic fix-it-all solution for custom deploy problems including sounds
-    elseif CLIENT and !self.CertainAboutAtts and !self.AttReqSent and IsValid(self:GetOwner()) then
+        owner:SetSaveValue("m_flNextAttack", 0) -- the magic fix-it-all solution for custom deploy problems including sounds
+    elseif CLIENT and !self.CertainAboutAtts and !self.AttReqSent and IsValid(owner) then
         -- If client is aware of this weapon and it's not on the ground, ask for attachment info
         -- If it is not on a player, delay networking until it is rendered (in cl_viewmodel)
         -- print(self, "network weapon from sh_deploy")

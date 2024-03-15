@@ -148,12 +148,13 @@ end
 
 function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
     -- call through hook function, args = data. return nil to do nothing. return false to prevent thing from happening.
-    local hooks = self.AttCache_Hooks
+    stable = stable or self:GetTable()
+    local hooks = stable.AttCache_Hooks
 
     if !hooks[buff] then
         hooks[buff] = {}
 
-        local atts = self.Attachments
+        local atts = stable.Attachments
 
         for i = 1, #atts do
             local k = atts[i]
@@ -181,7 +182,7 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
         end
 
         local eles = self:GetActiveElements()
-        local atteles = self.AttachmentElements
+        local atteles = stable.AttachmentElements
 
         for i = 1, #eles do
             local e = eles[i]
@@ -192,8 +193,6 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
             end
         end
 
-        stable = stable or self:GetTable()
-
         if isfunction(stable[buff]) then
             table.insert(hooks[buff], {stable[buff], stable[buff .. "_Priority"] or 0})
         end
@@ -202,8 +201,11 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
         shouldsort = true
     end
 
+    local bufftbl = hooks[buff]
     local retvalue = nil
-    for _, k in ipairs(hooks[buff]) do
+
+    for i = 1, #bufftbl do
+        local k = bufftbl[i]
         local ret = k[1](self, data)
         if ret == false then
             return

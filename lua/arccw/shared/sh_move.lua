@@ -8,14 +8,19 @@ function ArcCW.Move(ply, mv, cmd)
 
     if !wpn.ArcCW then return end
 
-    local basespd = (Vector(cmd:GetForwardMove(), cmd:GetUpMove(), cmd:GetSideMove())):Length()
-    basespd = math.min(basespd, mv:GetMaxClientSpeed())
+    local basespd = (Vector(cmd:GetForwardMove(), cmd:GetUpMove(), cmd:GetSideMove())):LengthSqr()
 
     if basespd == 0 then return end -- The player isn't moving, so we don't have to make any further changes
 
-    local s = m_clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1)
-    ply.ArcCW_LastTickBaseSpeedMult = s
-    s = Lerp( ArcCW.ConVars["mult_movespeed"]:GetFloat(), 1, m_clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1) )
+    basespd = math.min(math.sqrt(basespd), mv:GetMaxClientSpeed())
+
+    local s = wpntbl.TickCache_Mults.BaseSpeedMult
+    if !s then
+        s = m_clamp(wpntbl.SpeedMult * wpn:GetBuff_Mult("Mult_SpeedMult", wpntbl) * wpn:GetBuff_Mult("Mult_MoveSpeed", wpntbl), 0, 1)
+        wpntbl.TickCache_Mults.BaseSpeedMult = s
+    end
+    s = Lerp( ArcCW.ConVars["mult_movespeed"]:GetFloat(), 1, s )
+
     local shotdelta = 0 -- how close should we be to the shoot speed mult
     local shottime = wpn:GetNextPrimaryFireSlowdown() - CurTime()
 
@@ -47,7 +52,7 @@ function ArcCW.Move(ply, mv, cmd)
         shotdelta = 1
     else
         -- recover from firing slowdown after shadow duration
-        local delay = wpn:GetFiringDelay()
+        local delay = wpn:GetFiringDelay(wpntbl)
         local aftershottime = -shottime / delay
         shotdelta = m_clamp(1 - aftershottime, 0, 1)
     end
@@ -57,7 +62,6 @@ function ArcCW.Move(ply, mv, cmd)
         s = s * Lerp(shotdelta, 1, shootmove)
     end
 
-    mv:SetMaxSpeed(basespd * s)
     mv:SetMaxClientSpeed(basespd * s)
     ply.ArcCW_LastTickSpeedMult = s -- in case other addons need it
 end
@@ -129,7 +133,7 @@ function ArcCW.StartCommand(ply, ucmd)
     local weptbl = wep:GetTable()
     if !weptbl.ArcCW then return end
 
-    if ply:Alive() and ucmd:KeyDown(IN_SPEED)
+    if ucmd:KeyDown(IN_SPEED) and ply:Alive()
             and wep:GetBurstCount() > 0 and wep:GetCurrentFiremode().RunawayBurst
             and !wep:CanShootWhileSprint() then
         ucmd:SetButtons(ucmd:GetButtons() - IN_SPEED)

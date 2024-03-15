@@ -1,11 +1,14 @@
 local ang0 = Angle(0, 0, 0)
 SWEP.ClientFreeAimAng = Angle(ang0)
 
-function SWEP:ShouldFreeAim(stable)
-    stable = stable or self:GetTable()
-    if self:GetOwner():IsNPC() then return false end
-    if (ArcCW.ConVars["freeaim"]:GetInt() == 0 or self:GetBuff_Override("NeverFreeAim", stable.NeverFreeAim, stable))  and !self:GetBuff_Override("AlwaysFreeAim", stable.AlwaysFreeAim, stable) then return false end
+local function shouldFreeAim(ent, stable)
+    stable = stable or ent:GetTable()
+    if ent:GetOwner():IsNPC() then return false end
+    if (ArcCW.ConVars["freeaim"]:GetInt() == 0 or ent:GetBuff_Override("NeverFreeAim", stable.NeverFreeAim, stable))  and !ent:GetBuff_Override("AlwaysFreeAim", stable.AlwaysFreeAim, stable) then return false end
     return true
+end
+function SWEP:ShouldFreeAim(stable)
+    shouldFreeAim(self, stable)
 end
 
 function SWEP:FreeAimMaxAngle()
@@ -13,8 +16,9 @@ function SWEP:FreeAimMaxAngle()
     return ang
 end
 
-function SWEP:ThinkFreeAim()
-    if !self:ShouldFreeAim() then return end
+function SWEP:ThinkFreeAim(stable)
+    stable = stable or self:GetTable()
+    if !shouldFreeAim(self, stable) then return end
 
     local eyeang = self:GetOwner():EyeAngles()
     local diff = eyeang - self:GetLastAimAngle()
@@ -50,12 +54,12 @@ function SWEP:ThinkFreeAim()
     self:SetLastAimAngle(eyeang)
 
     if CLIENT then
-        self.ClientFreeAimAng = freeaimang
+        stable.ClientFreeAimAng = freeaimang
     end
 end
 
 function SWEP:GetFreeAimOffset()
-    if !self:ShouldFreeAim() then return ang0 end
+    if !shouldFreeAim(self) then return ang0 end
     if CLIENT then
         return self.ClientFreeAimAng
     else

@@ -445,6 +445,7 @@ local currentvmfov = 0
 
 function SWEP:TranslateFOV(fov)
     --local irons = self:GetActiveSights()
+    if !CLIENT then return end
 
     if CLIENT and ArcCW.ConVars["dev_benchgun"]:GetBool() then
         currentfov = fov -- self.CurrentFOV = fov

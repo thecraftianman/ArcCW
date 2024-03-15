@@ -35,22 +35,26 @@ function SWEP:KillTimers()
     self.ActiveTimers = {}
 end
 
-function SWEP:ProcessTimers()
+function SWEP:ProcessTimers(stable)
     local keeptimers, UCT = {}, CurTime()
 
     if CLIENT and UCT == tick then return end
 
-    if !self.ActiveTimers then self:InitTimers() end
+    stable = stable or self:GetTable()
+    local activetimers = stable.ActiveTimers
+    if !activetimers then self:InitTimers() end
 
-    for _, v in pairs(self.ActiveTimers) do
+    for i = 1, #activetimers do
+        local v = activetimers[i]
         if v[1] <= UCT then v[3]() end
     end
 
-    for _, v in pairs(self.ActiveTimers) do
+    for i = 1, #activetimers do
+        local v = activetimers[i]
         if v[1] > UCT then tbl_ins(keeptimers, v) end
     end
 
-    self.ActiveTimers = keeptimers
+    stable.ActiveTimers = keeptimers
 end
 
 local function DoShell(wep, data)
@@ -157,9 +161,8 @@ function SWEP:PlayEvent(v)
     v = self:GetBuff_Hook("Hook_PostPlayEvent", v) or v
 end
 
-
 if CLIENT then
-    net.Receive("arccw_networksound", function(len)
+    net.Receive("arccw_networksound", function()
         local v = net.ReadTable()
         local wep = net.ReadEntity()
 

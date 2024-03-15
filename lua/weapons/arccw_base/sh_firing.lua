@@ -95,7 +95,7 @@ function SWEP:ApplyRandomSpread(dir, spread)
     local radius = math.Rand(0, 1)
     local theta = math.Rand(0, math.rad(360))
     local bulletang = dir:Angle()
-    local forward, right, up = bulletang:Forward(), bulletang:Right(), bulletang:Up()
+    local right, up = bulletang:Right(), bulletang:Up()
     local x = radius * math.sin(theta)
     local y = radius * math.cos(theta)
 
@@ -170,7 +170,7 @@ function SWEP:PrimaryAttack()
             start = src,
             endpos = src + owner:GetAimVector() * 33000,
             mask = MASK_SHOT,
-            filter = {self, self:GetOwner()}
+            filter = {self, owner}
         })
         local dist = (dev_tr.HitPos - src):Length()
         local r = dist / (1 / math.tan(disp)) -- had to google "trig cheat sheet to figure this one out"
@@ -211,7 +211,7 @@ function SWEP:PrimaryAttack()
     dmgtable = self:GetBuff_Override("Override_BodyDamageMults") or dmgtable
 
     -- drive by is cool
-    src = ArcCW:GetVehicleFireTrace(self:GetOwner(), src, dir) or src
+    src = ArcCW:GetVehicleFireTrace(owner, src, dir) or src
 
     local bullet      = {}
     bullet.Attacker   = owner
@@ -239,7 +239,7 @@ function SWEP:PrimaryAttack()
     local shpatt   = self:GetBuff_Override("Override_ShotgunSpreadPattern", self.ShotgunSpreadPattern)
     local shpattov = self:GetBuff_Override("Override_ShotgunSpreadPatternOverrun", self.ShotgunSpreadPatternOverrun)
 
-    local extraspread = AngleRand() * self:GetDispersion() * ArcCW.MOAToAcc / 10
+    -- local extraspread = AngleRand() * self:GetDispersion() * ArcCW.MOAToAcc / 10
 
     local projectiledata = {}
 
@@ -305,7 +305,7 @@ function SWEP:PrimaryAttack()
         for n = 1, bullet.Num do
             bullet.Num = 1
             local dirry = Vector(dir.x, dir.y, dir.z)
-            math.randomseed(math.Round(util.SharedRandom(n, -1337, 1337, !issingleplayer and self:GetOwner():GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)) + desyncnum)
+            math.randomseed(math.Round(util.SharedRandom(n, -1337, 1337, !issingleplayer and owner:GetCurrentCommand():CommandNumber() or CurTime()) * (self:EntIndex() % 30241)) + desyncnum)
             if !self:GetBuff_Override("Override_NoRandSpread", self.NoRandSpread) then
                 self:ApplyRandomSpread(dirry, spread)
                 bullet.Dir = dirry
@@ -533,7 +533,7 @@ function SWEP:DoPrimaryAnim()
 
     anim = self:GetBuff_Hook("Hook_SelectFireAnimation", anim) or anim
 
-    local time = self:GetBuff_Mult("Mult_FireAnimTime", anim) or 1
+    local time = self:GetBuff_Mult("Mult_FireAnimTime") or 1
 
     if anim then self:PlayAnimation(anim, time, true, 0, false) end
 end
@@ -551,9 +551,10 @@ function SWEP:DoPenetration(tr, penleft, alreadypenned)
     ArcCW:DoPenetration(tr, bullet.Damage, bullet, penleft, false, alreadypenned)
 end
 
-function SWEP:GetFiringDelay()
-    local delay = (self.Delay * (1 / self:GetBuff_Mult("Mult_RPM")))
-    delay = self:GetBuff_Hook("Hook_ModifyRPM", delay) or delay
+function SWEP:GetFiringDelay(stable)
+    stable = stable or self:GetTable()
+    local delay = (stable.Delay * (1 / self:GetBuff_Mult("Mult_RPM", stable)))
+    delay = self:GetBuff_Hook("Hook_ModifyRPM", delay, _, stable) or delay
 
     return delay
 end
@@ -810,6 +811,7 @@ function SWEP:DoRecoil()
 end
 
 function SWEP:GetBurstLength()
+    --[[
     local clip = self:Clip1()
     if self:HasBottomlessClip() then
         clip = self:Ammo1()
@@ -818,7 +820,7 @@ function SWEP:GetBurstLength()
         end
     end
     --if clip == 0 then return 1 end
-
+    ]]
     local len = self:GetCurrentFiremode().Mode
 
     if !len then return self:GetBurstCount() + 10 end
