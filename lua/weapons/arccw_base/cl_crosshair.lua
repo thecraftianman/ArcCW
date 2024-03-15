@@ -1,5 +1,5 @@
 local size = 0
-local clump_inner = Material("arccw/hud/clump_inner.png", "mips smooth")
+-- local clump_inner = Material("arccw/hud/clump_inner.png", "mips smooth")
 local clump_outer = Material("arccw/hud/clump_outer.png", "mips smooth")
 local aimtr_result = {}
 local aimtr = {}
@@ -25,8 +25,8 @@ function SWEP:ShouldDrawCrosshair()
     return true
 end
 
-local cr_main = Color( 0, 255, 0 )
-local cr_shad = Color( 0, 0, 0, 127 )
+-- local cr_main = Color( 0, 255, 0 )
+-- local cr_shad = Color( 0, 0, 0, 127 )
 
 local gaA = 0
 local gaD = 0
@@ -73,6 +73,9 @@ function SWEP:DrawDevCrosshair(x, y)
 end
 
 function SWEP:DoDrawCrosshair(x, y)
+    if ArcCW.ConVars["override_crosshair_off"]:GetBool() then return false end
+    if !ArcCW.ConVars["crosshair"]:GetBool() then return false end
+
     local ply = LocalPlayer()
     local pos = ply:EyePos()
     local ang = ply:EyeAngles() - self:GetOurViewPunchAngles() + self:GetFreeAimOffset()
@@ -278,13 +281,13 @@ function SWEP:DoDrawCrosshair(x, y)
         if ArcCW.ConVars["crosshair_clump_outline"]:GetBool() then
             surface.SetMaterial(clump_outer)
 
-            for i=1, prong_out do
-                surface.DrawCircle(x-1, y-0, acc + math.ceil(i*0.5) * (i % 2 == 1 and 1 or -1), outlineClr.r, outlineClr.g, outlineClr.b, outlineClr.a * self.CrosshairDelta)
+            for i = 1, prong_out do
+                surface.DrawCircle(x - 1, y - 0, acc + math.ceil(i * 0.5) * (i % 2 == 1 and 1 or -1), outlineClr.r, outlineClr.g, outlineClr.b, outlineClr.a * self.CrosshairDelta)
             end
-            surface.DrawCircle(x-1, y-0, acc, outlineClr.r, outlineClr.g, outlineClr.b, outlineClr.a * self.CrosshairDelta)
+            surface.DrawCircle(x - 1, y - 0, acc, outlineClr.r, outlineClr.g, outlineClr.b, outlineClr.a * self.CrosshairDelta)
         end
 
-        surface.DrawCircle(x-1, y-0, acc, clr.r, clr.g, clr.b, clr.a * self.CrosshairDelta)
+        surface.DrawCircle(x - 1, y - 0, acc, clr.r, clr.g, clr.b, clr.a * self.CrosshairDelta)
     end
 
     self:GetBuff_Hook("Hook_PostDrawCrosshair", w2s)
