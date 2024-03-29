@@ -473,7 +473,7 @@ net.Receive("arccw_asktodrop", function(len, ply)
 end)
 
 if SERVER then
-    net.Receive("arccw_applypreset", function(len, ply)
+    net.Receive("arccw_applypreset", function(_, ply)
         local wpn = net.ReadEntity()
 
         if wpn:GetOwner() != ply or !wpn.ArcCW then return end
@@ -482,19 +482,22 @@ if SERVER then
             return
         end
 
-        for k, v in pairs(wpn.Attachments) do
-            wpn:Detach(k, true, true)
+        local atts = wpn.Attachments
+
+        for k, _ in ipairs(atts) do
+            wpn:Detach(k, true, true, _, true)
         end
 
-        wpn.Attachments.BaseClass = nil -- AGHHHHHHHHHH
-        for k, v in SortedPairs(wpn.Attachments) do
+        atts.BaseClass = nil -- AGHHHHHHHHHH
+
+        for k, v in ipairs(atts) do -- SortedPairs
             local attid = net.ReadUInt(ArcCW.GetBitNecessity())
 
             local attname = ArcCW.AttachmentIDTable[attid or 0] or ""
             local atttbl = ArcCW.AttachmentTable[attname]
             if !atttbl then continue end
 
-            wpn:Attach(k, attname, true, true)
+            wpn:Attach(k, attname, true, true, true)
 
             if net.ReadBool() then
                 v.SlidePos = net.ReadFloat()

@@ -825,9 +825,11 @@ function SWEP:NetworkWeapon(sendto)
     net.Start("arccw_networkatts")
     net.WriteEntity(self) -- self entity
 
-    net.WriteUInt(table.Count(self.Attachments), 8)
+    local atts = self.Attachments
 
-    for _, i in pairs(self.Attachments) do
+    net.WriteUInt(#atts, 8)
+
+    for _, i in ipairs(atts) do
         if !i.Installed then net.WriteUInt(0, ArcCW.GetBitNecessity()) continue end
 
         local atttbl = ArcCW.AttachmentTable[i.Installed]
@@ -885,7 +887,7 @@ end
 
 
 function SWEP:SendAllDetails()
-    for i, k in pairs(self.Attachments) do
+    for i, _ in ipairs(self.Attachments) do
         self:SendDetail_SlidePos(i, true)
         self:SendDetail_ToggleNum(i, true)
     end
@@ -1161,8 +1163,10 @@ end
 
 local curgamemode = engine.ActiveGamemode()
 
-function SWEP:Attach(slot, attname, silent, noadjust)
+function SWEP:Attach(slot, attname, silent, noadjust, updatemodel)
     silent = silent or false
+    updatemodel = updatemodel or false
+
     local attslot = self.Attachments[slot]
     if !attslot then return end
     if attslot.Installed == attname then return end
@@ -1205,7 +1209,7 @@ function SWEP:Attach(slot, attname, silent, noadjust)
     if max then
         local amt = 0
 
-        for i, k in pairs(self.Attachments) do
+        for _, k in ipairs(self.Attachments) do
             if k.Installed == attname then amt = amt + 1 end
         end
 
@@ -1233,7 +1237,7 @@ function SWEP:Attach(slot, attname, silent, noadjust)
     if CLIENT then
         -- we are asking to attach something
 
-        self:SendAllDetails()
+        -- self:SendAllDetails()
 
         net.Start("arccw_asktoattach")
         net.WriteUInt(slot, 8)
@@ -1277,9 +1281,12 @@ function SWEP:Attach(slot, attname, silent, noadjust)
     --self.UnReady = false
 
     if SERVER then
-        self:NetworkWeapon()
-        self:SetupModel(false)
-        self:SetupModel(true)
+        if !updatemodel then
+            self:NetworkWeapon()
+            self:SetupModel(false)
+            self:SetupModel(true)
+        end
+
         ArcCW:PlayerSendAttInv(self:GetOwner())
 
         if curgamemode == "terrortown" then
@@ -1322,7 +1329,10 @@ function SWEP:Attach(slot, attname, silent, noadjust)
         end
     end
 
-    self:RefreshBGs()
+    if !updatemodel then
+        self:RefreshBGs()
+    end
+
     return true
 end
 
@@ -1336,26 +1346,31 @@ function SWEP:DetachAllMergeSlots(slot, silent)
     end
 end
 
-function SWEP:Detach(slot, silent, noadjust, nocheck)
+function SWEP:Detach(slot, silent, noadjust, nocheck, updatemodel)
+    updatemodel = updatemodel or false
+
     if !slot then return end
-    if !self.Attachments[slot] then return end
 
-    if !self.Attachments[slot].Installed then return end
+    local attslot = self.Attachments[slot]
 
-    if self.Attachments[slot].Internal then return end
+    if !attslot then return end
 
-    if !nocheck and !ArcCW:PlayerCanAttach(self:GetOwner(), self, self.Attachments[slot].Installed, slot, true) then
+    if !attslot.Installed then return end
+
+    if attslot.Internal then return end
+
+    if !nocheck and !ArcCW:PlayerCanAttach(self:GetOwner(), self, attslot.Installed, slot, true) then
         if CLIENT and !silent then
             surface.PlaySound("items/medshotno1.wav")
         end
         return
     end
 
-    if self.Attachments[slot].Installed == self.Attachments[slot].EmptyFallback then
+    if attslot.Installed == attslot.EmptyFallback then
         return
     end
 
-    local previnstall = self.Attachments[slot].Installed
+    local previnstall = attslot.Installed
 
     local atttbl = ArcCW.AttachmentTable[previnstall]
 
@@ -1372,14 +1387,14 @@ function SWEP:Detach(slot, silent, noadjust, nocheck)
         self:DeselectUBGL()
     end
 
-    if self.Attachments[slot].EmptyFallback then -- is this a good name
-        self.Attachments[slot].Installed = self.Attachments[slot].EmptyFallback
+    if attslot.EmptyFallback then -- is this a good name
+        attslot.Installed = attslot.EmptyFallback
     else
-        self.Attachments[slot].Installed = nil
+        attslot.Installed = nil
     end
 
-    if self.Attachments[slot].SubAtts then
-        for i, k in pairs(self.Attachments[slot].SubAtts) do
+    if attslot.SubAtts then
+        for _, k in pairs(attslot.SubAtts) do
             self:Detach(k, true, true)
         end
     end
@@ -1389,7 +1404,7 @@ function SWEP:Detach(slot, silent, noadjust, nocheck)
     end
 
     if CLIENT then
-        self:SendAllDetails()
+        -- self:SendAllDetails()
 
         -- we are asking to detach something
         net.Start("arccw_asktodetach")
@@ -1410,9 +1425,12 @@ function SWEP:Detach(slot, silent, noadjust, nocheck)
             self:SavePreset("autosave")
         end
     else
-        self:NetworkWeapon()
-        self:SetupModel(false)
-        self:SetupModel(true)
+        if !updatemodel then
+            self:NetworkWeapon()
+            self:SetupModel(false)
+            self:SetupModel(true)
+        end
+
         ArcCW:PlayerSendAttInv(self:GetOwner())
 
         if curgamemode == "terrortown" then
@@ -1420,11 +1438,14 @@ function SWEP:Detach(slot, silent, noadjust, nocheck)
         end
     end
 
-    self:RefreshBGs()
+    if !updatemodel then
+        self:RefreshBGs()
+    end
 
     if !noadjust then
         self:AdjustAtts()
     end
+
     return true
 end
 
@@ -1497,12 +1518,12 @@ function SWEP:AdjustAtts()
     -- Recalculate active elements so dependencies aren't fucked
     self.ActiveElementCache = nil
     self:GetActiveElements(true)
-    self.ModifiedCache = {}
+    local modifiedcache = {}
 
-    -- Tempoarily disable modified cache, since we're building it right now
+    -- Temporarily disable modified cache, since we're building it right now
     MODIFIED_CACHE = false
 
-    for i, k in pairs(self.Attachments) do
+    for i, k in ipairs(self.Attachments) do
         if !k.Installed then continue end
         local ok = true
 
@@ -1521,11 +1542,11 @@ function SWEP:AdjustAtts()
 
         -- Cache all possible value modifiers
         for var, v in pairs(atttbl) do
-            self.ModifiedCache[var] = true
+            modifiedcache[var] = true
             if var == "ToggleStats" or var == "Override_Firemodes" then
                 for _, v2 in pairs(v) do
                     for var2, _ in pairs(v2) do
-                        self.ModifiedCache[var2] = true
+                        modifiedcache[var2] = true
                     end
                 end
             end
@@ -1534,19 +1555,20 @@ function SWEP:AdjustAtts()
 
     for _, e in pairs(self.AttachmentElements) do
         if !istable(e) then continue end
-        for var, v in pairs(e) do
-            self.ModifiedCache[var] = true
+        for var, _ in pairs(e) do
+            modifiedcache[var] = true
         end
     end
 
     for _, e in pairs(self.Firemodes) do
         if !istable(e) then continue end
-        for var, v in pairs(e) do
-            self.ModifiedCache[var] = true
+        for var, _ in pairs(e) do
+            modifiedcache[var] = true
         end
     end
 
     MODIFIED_CACHE = true
+    self.ModifiedCache = modifiedcache
 
     if SERVER then
         local cs = self:GetCapacity() + self:GetChamberSize()
@@ -1555,8 +1577,9 @@ function SWEP:AdjustAtts()
             local diff = self:Clip1() - cs
             self:SetClip1(cs)
 
-            if self:GetOwner():IsValid() and !self:GetOwner():IsNPC() then
-                self:GetOwner():GiveAmmo(diff, self.Primary.Ammo, true)
+            local owner = self:GetOwner()
+            if owner:IsValid() and !owner:IsNPC() then
+                owner:GiveAmmo(diff, self.Primary.Ammo, true)
             end
         end
     else
@@ -1580,7 +1603,7 @@ function SWEP:AdjustAtts()
     self.Secondary.ClipSize = ubgl_clip or -1
     self.Secondary.Ammo = ubgl_ammo or "none"
 
-    --[[]
+    --[[
     if ubgl_clip then
         self.Secondary.ClipSize = ubgl_clip
         if self:GetOwner():IsPlayer() and ArcCW.ConVars["atts_ubglautoload"]:GetBool() and ubgl_ammo then
@@ -1592,8 +1615,6 @@ function SWEP:AdjustAtts()
         self.Secondary.ClipSize = -1
     end
     ]]
-
-
 
     self:RebuildSubSlots()
 
@@ -1734,7 +1755,7 @@ function SWEP:RebuildSubSlots()
     -- this function rebuilds the subslots while preserving installed attachment data
     local subslottrees = {}
 
-    local baseatts = table.Count(weapons.Get(self:GetClass()).Attachments)
+    local baseatts = #weapons.Get(self:GetClass()).Attachments
 
     self.Attachments.BaseClass = nil
 
@@ -1773,7 +1794,7 @@ function SWEP:RebuildSubSlots()
 end
 
 function SWEP:AddSubSlot(i, attname)
-    local baseatts = table.Count(weapons.Get(self:GetClass()).Attachments)
+    local baseatts = #weapons.Get(self:GetClass()).Attachments
     local att = ArcCW.AttachmentTable[attname]
     if att.SubSlots then
         self.Attachments[i].SubAtts = {}

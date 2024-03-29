@@ -129,24 +129,24 @@ end
 function SWEP:SetupModel(wm)
     local elements = {}
 
-    if !wm and !self:GetOwner():IsPlayer() then return end
     local owner = self:GetOwner()
+    if !wm and !owner:IsPlayer() then return end
 
-    local og = weapons.Get(self:GetClass())
+    -- local og = weapons.Get(self:GetClass())
 
-    self.PrintName = self.OldPrintName or og.PrintName
+    self.PrintName = self.OldPrintName or weapons.Get(self:GetClass()).PrintName -- og.PrintName
     local prefix, suffix = "", ""
 
-    self:GetActiveElements(true)
+    local activeeles = self:GetActiveElements(true)
 
-    if !wm then
+    if CLIENT and !wm then
         local vm = owner:GetViewModel()
 
         vm.RenderOverride = function(v)
             if !self or !self.ArcCW then v.RenderOverride = nil return end
             local wep = LocalPlayer():GetActiveWeapon()
             if wep and !wep.ArcCW then v.RenderOverride = nil return end
-            self:RefreshBGs()
+            -- self:RefreshBGs() -- NOTE: Testing; not including this may break things
 
             for i, k in pairs(self:GetBuff_Override("Override_CaseBGs", self.CaseBGs) or {}) do
                 if !isnumber(i) then continue end
@@ -197,28 +197,28 @@ function SWEP:SetupModel(wm)
 
     if CLIENT then
 
-    if wm then
-        self:KillModel(self.WM)
-        self.WM = elements
-    else
-        self:KillModel(self.VM)
-        self.VM = elements
+        if wm then
+            self:KillModel(self.WM)
+            self.WM = elements
+        else
+            self:KillModel(self.VM)
+            self.VM = elements
 
-        if !IsValid(owner) or owner:IsNPC() then
-            return
+            if !IsValid(owner) or owner:IsNPC() then
+                return
+            end
+
+            if !IsValid(owner:GetViewModel()) then
+                self:SetTimer(0.5, function()
+                    self:SetupModel(wm)
+                end)
+                return
+            end
+
+            owner:GetViewModel():SetupBones()
         end
 
-        if !IsValid(owner:GetViewModel()) then
-            self:SetTimer(0.5, function()
-                self:SetupModel(wm)
-            end)
-            return
-        end
-
-        owner:GetViewModel():SetupBones()
-    end
-
-    render.OverrideDepthEnable( true, true )
+        render.OverrideDepthEnable( true, true )
 
     end
 
@@ -301,11 +301,13 @@ function SWEP:SetupModel(wm)
         table.insert(elements, element)
     end
 
-    for _, k in pairs(self:GetActiveElements()) do
+    for _, k in pairs(activeeles) do
         self:AddElement(k, wm)
     end
 
-    for i, k in pairs(self.Attachments) do
+    local atteles = self.AttachmentElements
+
+    for i, k in ipairs(self.Attachments) do
         if !k.Installed then continue end
 
         local atttbl = ArcCW.AttachmentTable[k.Installed]
@@ -364,8 +366,8 @@ function SWEP:SetupModel(wm)
         local repbone = nil
         local repang = nil
 
-        for _, e in pairs(self:GetActiveElements()) do
-            local ele = self.AttachmentElements[e]
+        for _, e in pairs(activeeles) do
+            local ele = atteles[e]
 
             if !ele then continue end
 
@@ -664,7 +666,7 @@ function SWEP:SetupModel(wm)
 
     local eid = self:EntIndex()
 
-    for i, k in pairs(elements) do
+    for _, k in pairs(elements) do
         local piletab = {
             Model = k.Model,
             Weapon = self
