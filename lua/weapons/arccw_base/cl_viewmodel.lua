@@ -123,10 +123,11 @@ local function stopwatch(name)
     sw_start = gb
 end
 ]]
-function SWEP:Move_Process(EyePos, EyeAng, velocity)
-    local VMPos, VMAng = self.VMPos, self.VMAng
-    local VMPosOffset, VMAngOffset = self.VMPosOffset, self.VMAngOffset
-    local VMPosOffset_Lerp, VMAngOffset_Lerp = self.VMPosOffset_Lerp, self.VMAngOffset_Lerp
+function SWEP:Move_Process(EyePos, EyeAng, velocity, stable)
+    stable = stable or self:GetTable()
+    local VMPos, VMAng = stable.VMPos, stable.VMAng
+    local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
+    local VMPosOffset_Lerp, VMAngOffset_Lerp = stable.VMPosOffset_Lerp, stable.VMAngOffset_Lerp
     local FT = scrunkly()
     local sightedmult = (self:GetState() == ArcCW.STATE_SIGHTS and 0.05) or 1
     local sg = self:GetSightDelta()
@@ -154,11 +155,11 @@ end
 
 local stepend = math.pi * 4
 
-function SWEP:Step_Process(EyePos, EyeAng, velocity)
-
-    local VMPos, VMAng = self.VMPos, self.VMAng
-    local VMPosOffset, VMAngOffset = self.VMPosOffset, self.VMAngOffset
-    local VMPosOffset_Lerp = self.VMPosOffset_Lerp
+function SWEP:Step_Process(_, _, velocity, stable)
+    stable = stable or self:GetTable()
+    local VMPos, VMAng = stable.VMPos, stable.VMAng
+    local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
+    local VMPosOffset_Lerp = stable.VMPosOffset_Lerp
     local state = self:GetState()
     local sprd = self:GetSprintDelta()
 
@@ -168,22 +169,22 @@ function SWEP:Step_Process(EyePos, EyeAng, velocity)
         velocity = math.min(velocity:Length(), 400) * Lerp(sprd, 1, 1.25)
     end
 
-    local delta = math.abs(self.StepBob * 2 / stepend - 1)
+    local delta = math.abs(stable.StepBob * 2 / stepend - 1)
     local FT = scrunkly() --FrameTime()
     local sightedmult = (state == ArcCW.STATE_SIGHTS and 0.25) or 1
     local sprintmult = (state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint() and 2) or 1
     local pronemult = (self:IsProne() and 10) or 1
     local onground = self:GetOwner():OnGround()
-    self.StepBob = self.StepBob + (velocity * 0.00015 + (math.pow(delta, 0.01) * 0.03)) * swayspeed * FT * 300
+    stable.StepBob = stable.StepBob + (velocity * 0.00015 + (math.pow(delta, 0.01) * 0.03)) * swayspeed * FT * 300
 
-    if self.StepBob >= stepend then
-        self.StepBob = 0
-        self.StepRandomX = math.Rand(1, 1.5)
-        self.StepRandomY = math.Rand(1, 1.5)
+    if stable.StepBob >= stepend then
+        stable.StepBob = 0
+        stable.StepRandomX = math.Rand(1, 1.5)
+        stable.StepRandomY = math.Rand(1, 1.5)
     end
 
     if velocity == 0 then
-        self.StepBob = 0
+        stable.StepBob = 0
     end
 
     if onground then
@@ -193,9 +194,9 @@ function SWEP:Step_Process(EyePos, EyeAng, velocity)
             sextra = LerpVector(sprd, vector_origin, sextra_vec)
         end
 
-        VMPosOffset.x = (math.sin(self.StepBob) * velocity * (0.000375 + sextra.x) * sightedmult * swayxmult) * self.StepRandomX
-        VMPosOffset.y = (math.sin(self.StepBob * 0.5) * velocity * (0.0005 + sextra.y) * sightedmult * sprintmult * pronemult * swayymult) * self.StepRandomY
-        VMPosOffset.z = math.sin(self.StepBob * 0.75) * velocity * (0.002 + sextra.z) * sightedmult * pronemult * swayzmult
+        VMPosOffset.x = (math.sin(stable.StepBob) * velocity * (0.000375 + sextra.x) * sightedmult * swayxmult) * stable.StepRandomX
+        VMPosOffset.y = (math.sin(stable.StepBob * 0.5) * velocity * (0.0005 + sextra.y) * sightedmult * sprintmult * pronemult * swayymult) * stable.StepRandomY
+        VMPosOffset.z = math.sin(stable.StepBob * 0.75) * velocity * (0.002 + sextra.z) * sightedmult * pronemult * swayzmult
     end
 
     VMPosOffset_Lerp.x = Lerp(32 * FT, VMPosOffset_Lerp.x, VMPosOffset.x)
@@ -226,13 +227,19 @@ function SWEP:Breath_StateMult()
     self.Breath_Intensity = self.Breath_Intensity * sightedmult
 end
 
-function SWEP:Breath_Process(EyePos, EyeAng)
-    local VMPos, VMAng = self.VMPos, self.VMAng
-    local VMPosOffset, VMAngOffset = self.VMPosOffset, self.VMAngOffset
+function SWEP:Breath_Process(_, _, stable)
+    stable = stable or self:GetTable()
+    local VMPos, VMAng = stable.VMPos, stable.VMAng
+    local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
     -- self:Breath_Health() Snaps around when regenerating
     self:Breath_StateMult()
-    VMPosOffset.x = (math.sin(CurTime() * 2 * self.Breath_Rate) * 0.1) * self.Breath_Intensity
-    VMPosOffset.y = (math.sin(CurTime() * 2.5 * self.Breath_Rate) * 0.025) * self.Breath_Intensity
+
+    local curtime = CurTime()
+    local breathrate = stable.Breath_Rate
+    local breathintensity = stable.Breath_Intensity
+
+    VMPosOffset.x = (math.sin(curtime * 2 * breathrate) * 0.1) * breathintensity
+    VMPosOffset.y = (math.sin(curtime * 2.5 * breathrate) * 0.025) * breathintensity
     VMAngOffset.x = VMPosOffset.x * 1.5
     VMAngOffset.y = VMPosOffset.y * 2
     VMAngOffset.z = VMPosOffset.y * VMPosOffset.x * -40
@@ -241,41 +248,44 @@ function SWEP:Breath_Process(EyePos, EyeAng)
     VMAng:Add(VMAngOffset)
 end
 
-function SWEP:Look_Process(EyePos, EyeAng, velocity)
-    local VMPos, VMAng = self.VMPos, self.VMAng
-    local VMPosOffset, VMAngOffset = self.VMPosOffset, self.VMAngOffset
+function SWEP:Look_Process(_, EyeAng, _, stable)
+    stable = stable or self:GetTable()
+    local VMPos, VMAng = stable.VMPos, stable.VMAng
+    local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
     local FT = scrunkly()
     local sightedmult = (self:GetState() == ArcCW.STATE_SIGHTS and 0.25) or 1
-    self.SmoothEyeAng = LerpAngle(0.05, self.SmoothEyeAng, EyeAng - self.LastEyeAng)
+    stable.SmoothEyeAng = LerpAngle(0.05, stable.SmoothEyeAng, EyeAng - stable.LastEyeAng)
     -- local xd, yd = (velocity.z / 10), (velocity.y / 200)
-    VMPosOffset.x = -self.SmoothEyeAng.x * -0.5 * sightedmult * lookxmult
-    VMPosOffset.y = self.SmoothEyeAng.y * 0.5 * sightedmult * lookymult
+    VMPosOffset.x = -stable.SmoothEyeAng.x * -0.5 * sightedmult * lookxmult
+    VMPosOffset.y = stable.SmoothEyeAng.y * 0.5 * sightedmult * lookymult
     VMAngOffset.x = VMPosOffset.x * 0.75
     VMAngOffset.y = VMPosOffset.y * 2.5
     VMAngOffset.z = VMPosOffset.x * 2 + VMPosOffset.y * -2
-    self.VMLookLerp.y = Lerp(FT * 10, self.VMLookLerp.y, VMAngOffset.y * -1.5 + self.SmoothEyeAng.y)
-    VMAng.y = VMAng.y - self.VMLookLerp.y
+    stable.VMLookLerp.y = Lerp(FT * 10, stable.VMLookLerp.y, VMAngOffset.y * -1.5 + stable.SmoothEyeAng.y)
+    VMAng.y = VMAng.y - stable.VMLookLerp.y
     VMPos:Add(VMAng:Up() * VMPosOffset.x)
     VMPos:Add(VMAng:Right() * VMPosOffset.y)
     VMAng:Add(VMAngOffset)
 end
 
-function SWEP:GetVMPosition(EyePos, EyeAng)
+function SWEP:GetVMPosition(EyePos, EyeAng, stable)
+    stable = stable or self:GetTable()
     local velocity = self:GetOwner():GetVelocity()
     velocity = WorldToLocal(velocity, angle_zero, vector_origin, EyeAng)
-    self:Move_Process(EyePos, EyeAng, velocity)
-    -- stopwatch("Move_Process")
-    self:Step_Process(EyePos, EyeAng, velocity)
-    -- stopwatch("Step_Process")
-    self:Breath_Process(EyePos, EyeAng)
-    -- stopwatch("Breath_Process")
-    self:Look_Process(EyePos, EyeAng, velocity)
-    -- stopwatch("Look_Process")
-    self.LastEyeAng = EyeAng
-    self.LastEyePos = EyePos
-    self.LastVelocity = velocity
 
-    return self.VMPos, self.VMAng
+    self:Move_Process(EyePos, EyeAng, velocity, stable)
+    -- stopwatch("Move_Process")
+    self:Step_Process(EyePos, EyeAng, velocity, stable)
+    -- stopwatch("Step_Process")
+    self:Breath_Process(EyePos, EyeAng, stable)
+    -- stopwatch("Breath_Process")
+    self:Look_Process(EyePos, EyeAng, velocity, stable)
+    -- stopwatch("Look_Process")
+    stable.LastEyeAng = EyeAng
+    stable.LastEyePos = EyePos
+    stable.LastVelocity = velocity
+
+    return stable.VMPos, stable.VMAng
 end
 
 SWEP.TheJ = {posa = Vector(), anga = Angle()}
@@ -354,6 +364,8 @@ function SWEP:GetViewModelPosition(pos, ang)
 
     -- stopwatch("set")
 
+    local isreloading = self:GetReloading()
+
     if self:InBipod() and self:GetBipodAngle() then
         local bpos = self:GetBuff_Override("Override_InBipodPos", stable.InBipodPos, stable)
         target.pos:Set(asight and asight.Pos or apos)
@@ -367,7 +379,7 @@ function SWEP:GetViewModelPosition(pos, ang)
     -- elseif (owner:Crouching() or owner:KeyDown(IN_DUCK)) and !self:GetReloading() then
         -- target.pos:Set(self:GetBuff("CrouchPos", true) or apos)
         -- target.ang:Set(self:GetBuff("CrouchAng", true) or aang)
-    elseif self:GetReloading() then
+    elseif isreloading then
         target.pos:Set(self:GetBuff("ReloadPos", true, _, stable) or apos)
         target.ang:Set(self:GetBuff("ReloadAng", true, _, stable) or aang)
     else
@@ -416,7 +428,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         local aaaapos = holstered and (hpos or spos) or (spos or hpos)
         local aaaaang = holstered and (hang or sang) or (sang or hang)
 
-        local sd = (self:GetReloading() and 0) or (self:IsProne() and math.Clamp(owner:GetVelocity():Length() / prone.Config.MoveSpeed, 0, 1)) or (holstered and 1) or (!self:CanShootWhileSprint() and sprd) or 0
+        local sd = (isreloading and 0) or (self:IsProne() and math.Clamp(owner:GetVelocity():Length() / prone.Config.MoveSpeed, 0, 1)) or (holstered and 1) or (!self:CanShootWhileSprint() and sprd) or 0
         sd = math.pow(math.sin(sd * math.pi * 0.5), 2)
 
         local d = math.pow(math.sin(sd * math.pi * 0.5), math.pi)
@@ -626,7 +638,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         swayspeed = Lerp(sd, 0, swayspeed)
 
         -- stopwatch("before vmposition")
-        local npos, nang = self:GetVMPosition(oldpos, oldang)
+        local npos, nang = self:GetVMPosition(oldpos, oldang, stable)
         pos:Set(npos)
         ang:Set(nang)
     end

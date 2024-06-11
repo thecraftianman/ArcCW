@@ -870,21 +870,22 @@ end
 
 -- BarrelHitWall is known to cause viewmodel flickering on certain playermodels if called during VM position function (a270cc9)
 local hitwallcache
-function SWEP:BarrelHitWall()
+function SWEP:BarrelHitWall(stable)
+    stable = stable or self:GetTable()
     local owner = self:GetOwner()
-    local len = self:GetBuff("BarrelLength")
+    local len = self:GetBuff("BarrelLength", _, _, stable)
+    local curtime = CurTime()
     if len == 0 or !ArcCW.ConVars["override_nearwall"]:GetBool()
             or (vrmod and vrmod.IsPlayerInVR(owner))
             or (owner:IsPlayer() and owner:InVehicle()) then
-        hitwallcache = {0, CurTime()}
+        hitwallcache = {0, curtime}
     end
 
-    if !hitwallcache or hitwallcache[2] ~= CurTime() then
-
-        local offset = self:GetBuff("BarrelOffsetHip")
+    if !hitwallcache or hitwallcache[2] ~= curtime then
+        local offset = self:GetBuff("BarrelOffsetHip", _, _, stable)
 
         if self:GetState() == ArcCW.STATE_SIGHTS then
-            offset = LerpVector(self:GetSightDelta(), self:GetBuff("BarrelOffsetSighted"), offset)
+            offset = LerpVector(self:GetSightDelta(), self:GetBuff("BarrelOffsetSighted", _, _, stable), offset)
         end
 
         local dir = owner:EyeAngles()
@@ -900,7 +901,7 @@ function SWEP:BarrelHitWall()
 
         local filter = {owner}
 
-        table.Add(filter, self.Shields)
+        table.Add(filter, stable.Shields)
 
         local tr = util.TraceLine({
             start = src,
@@ -912,9 +913,9 @@ function SWEP:BarrelHitWall()
         if tr.Hit and !tr.Entity.ArcCWProjectile then
             --local l = (tr.HitPos - src):Length()
             --hitwallcache = {math.Clamp(1 - l / len, 0, 1), CurTime()}
-            hitwallcache = {1 - tr.Fraction, CurTime()}
+            hitwallcache = {1 - tr.Fraction, curtime}
         else
-            hitwallcache = {0, CurTime()}
+            hitwallcache = {0, curtime}
         end
     end
 

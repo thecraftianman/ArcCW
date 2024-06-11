@@ -331,7 +331,7 @@ function SWEP:Think()
     -- Performing traces in rendering contexts seem to cause flickering with c_hands that have QC attachments(?)
     -- Since we need to run the trace every tick anyways, do it here instead
     if CLIENT then
-        self:BarrelHitWall()
+        self:BarrelHitWall(stable)
     end
 
     self:GetBuff_Hook("Hook_Think", _, _, stable)
