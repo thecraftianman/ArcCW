@@ -228,7 +228,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     -- Problem: If this animation interrupted a previous animation with cambone movement,
     -- it will start with an incorrect offset and snap at the end.
     -- Therefore this now only ever sets it once.
-    local att = self:GetBuff_Override("Override_CamAttachment", stable.CamAttachment, _, stable)
+    local att = self:GetBuff_Override("Override_CamAttachment", stable.CamAttachment, stable)
     if att and vm:GetAttachment(att) and (anim.ForceCamReset or stable.Cam_Offset_Ang == nil) then
         local ang = vm:GetAttachment(att).Ang
         ang = vm:WorldToLocalAngles(ang)
