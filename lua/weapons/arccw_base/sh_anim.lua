@@ -55,7 +55,7 @@ end
 
 local issingleplayer = game.SinglePlayer()
 
-function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, skipholster, priority, absolute, stable)
+function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolute, stable)
     mult = mult or 1
     pred = pred or false
     startfrom = startfrom or 0
@@ -265,7 +265,7 @@ function SWEP:PlayIdleAnimation(pred, stable)
         ianim = self:GetBuff_Hook("Hook_IdleReset", ianim, _, stable) or ianim
     end
 
-    self:PlayAnimation(ianim, 1, pred, nil, nil, nil, true, stable)
+    self:PlayAnimation(ianim, 1, pred, nil, nil, nil, true, _, stable)
 end
 
 function SWEP:GetAnimKeyTime(key, min)
