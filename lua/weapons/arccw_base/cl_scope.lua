@@ -183,7 +183,6 @@ function SWEP:CoolView(ply, pos, ang, fov)
 
     if viewbobintensity == 0 then return end
 
-    oldpostmp = pos * 1
     oldangtmp = ang * 1
 
     targbool = self:GetNextPrimaryFire() - .1 > CurTime()

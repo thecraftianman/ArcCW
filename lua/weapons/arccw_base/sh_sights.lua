@@ -138,21 +138,26 @@ end
 SWEP.SightTable = {}
 SWEP.SightMagnifications = {}
 
-function SWEP:SetupActiveSights()
-    if !self.IronSightStruct then return end
-    if self:GetBuff_Hook("Hook_ShouldNotSight") then return false end
+function SWEP:SetupActiveSights(stable)
+    stable = stable or self:GetTable()
+    if !stable.IronSightStruct then return end
+    if self:GetBuff_Hook("Hook_ShouldNotSight", _, _, stable) then return false end
 
-    if !self:GetOwner():IsPlayer() then return end
+    local owner = self:GetOwner()
+    if !owner:IsPlayer() then return end
 
     local sighttable = {}
-    local vm = self:GetOwner():GetViewModel()
+    local vm = owner:GetViewModel()
 
     if !vm or !vm:IsValid() then return end
 
-    local kbi = self.KeepBaseIrons or true
-    local bif = self.BaseIronsFirst or true
+    local kbi = stable.KeepBaseIrons or true
+    local bif = stable.BaseIronsFirst or true
+    local atts = self:GetActiveElements()
+    local sightmags = stable.SightMagnifications
+    local atteles = self.AttachmentElements
 
-    for i, k in pairs(self.Attachments) do
+    for i, k in ipairs(stable.Attachments) do
         if !k.Installed then continue end
 
         local atttbl = ArcCW.AttachmentTable[k.Installed]
@@ -182,10 +187,10 @@ function SWEP:SetupActiveSights()
 
                     stab.ScopeMagnification = math.max(stab.ScopeMagnificationMax, stab.ScopeMagnificationMin)
 
-                    if !i and self.SightMagnifications[0] then
-                        stab.ScopeMagnification = self.SightMagnifications[0]
-                    elseif self.SightMagnifications[i] then
-                        stab.ScopeMagnification = self.SightMagnifications[i]
+                    if !i and sightmags[0] then
+                        stab.ScopeMagnification = sightmags[0]
+                    elseif sightmags[i] then
+                        stab.ScopeMagnification = sightmags[i]
                     end
                 else
                     stab.ScopeMagnification = atttbl.HolosightMagnification
@@ -228,8 +233,8 @@ function SWEP:SetupActiveSights()
                 local vmelemod = nil
                 local slidemod = nil
 
-                for _, e in pairs(self:GetActiveElements()) do
-                    local ele = self.AttachmentElements[e]
+                for _, e in ipairs(atts) do
+                    local ele = atteles[e]
 
                     if !ele then continue end
 
@@ -258,7 +263,7 @@ function SWEP:SetupActiveSights()
 
                 offset_ang = k.VMOffsetAng or offset_ang
 
-                bpos, bang = WorldToLocal(Vector(0, 0, 0), Angle(0, 0, 0), bpos, bang)
+                bpos, bang = WorldToLocal(vector_origin, angle_zero, bpos, bang)
 
                 bpos = bpos + bang:Forward() * offset.x
                 bpos = bpos + bang:Right() * offset.y
@@ -290,7 +295,7 @@ function SWEP:SetupActiveSights()
                 bang.p = -bang.p
                 bang.y = -bang.y
 
-                corang = k.CorrectiveAng or Angle(0, 0, 0)
+                local corang = k.CorrectiveAng or Angle(0, 0, 0)
 
                 bang:RotateAroundAxis(bang:Right(), corang.p)
                 bang:RotateAroundAxis(bang:Up(), corang.y)
@@ -337,7 +342,7 @@ function SWEP:SetupActiveSights()
                 evpos = evpos * (k.VMScale or Vector(1, 1, 1))
 
                 if atttbl.Holosight and !atttbl.HolosightMagnification then
-                    evpos = evpos + Vector(0, k.ExtraSightDist or self.ExtraSightDist or 0, 0)
+                    evpos = evpos + Vector(0, k.ExtraSightDist or stable.ExtraSightDist or 0, 0)
                 end
 
                 evpos = evpos + (k.CorrectivePos or Vector(0, 0, 0))
@@ -363,7 +368,8 @@ function SWEP:SetupActiveSights()
     end
 
     if kbi then
-        local extra = self.ExtraIrons
+        local extra = stable.ExtraIrons
+
         if extra then
             for _, ot in pairs(extra) do
                 local t = table.Copy(ot)
@@ -376,7 +382,7 @@ function SWEP:SetupActiveSights()
             end
         end
 
-        local t = table.Copy(self:GetBuff_Override("Override_IronSightStruct") or self.IronSightStruct)
+        local t = table.Copy(self:GetBuff_Override("Override_IronSightStruct", _, stable) or stable.IronSightStruct)
         t.IronSight = true
         if bif then
             table.insert(sighttable, 1, t)
@@ -385,7 +391,7 @@ function SWEP:SetupActiveSights()
         end
     end
 
-    self.SightTable = sighttable
+    stable.SightTable = sighttable
 end
 
 function SWEP:SwitchActiveSights()

@@ -726,7 +726,7 @@ function SWEP:CreateCustomizeHUD()
             triv_attname.Paint = function(span, w, h)
                 local txt = multlinetext(translate("name." .. att) or atttbl.PrintName, w, "ArcCW_16")
 
-                c = 0
+                local c = 0
 
                 for _, i in pairs(txt) do
                     surface.SetFont("ArcCW_16")
@@ -766,7 +766,7 @@ function SWEP:CreateCustomizeHUD()
 
         -- att desc
 
-        desctext = multlinetext(translate("desc." .. att) or atttbl.Description, barsize - smallgap * 2, "ArcCW_8")
+        local desctext = multlinetext(translate("desc." .. att) or atttbl.Description, barsize - smallgap * 2, "ArcCW_8")
 
         local triv_desc = vgui.Create("DLabel", atttrivia)
         triv_desc:SetSize(barsize, ScreenScaleMulti(8) * (table.Count(desctext) + 1))

@@ -1,6 +1,7 @@
 function EFFECT:Init(data)
     local pos = data:GetOrigin()
     local wpn = data:GetEntity()
+    local ang
 
     if !IsValid(wpn) then return end
 

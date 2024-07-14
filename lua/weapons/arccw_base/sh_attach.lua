@@ -198,7 +198,7 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
         end
 
         table.sort(hooks[buff], function(a, b) return a[2] >= b[2] end)
-        shouldsort = true
+        -- shouldsort = true
     end
 
     local bufftbl = hooks[buff]

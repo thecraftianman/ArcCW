@@ -173,7 +173,7 @@ function SWEP:SavePreset(presetname)
         end
     end
 
-    filename = ArcCW.PresetPath .. self:GetPresetBase() .. "/" .. presetname .. ".json"
+    local filename = ArcCW.PresetPath .. self:GetPresetBase() .. "/" .. presetname .. ".json"
     file.CreateDir(ArcCW.PresetPath .. self:GetPresetBase())
     file.Write(filename, util.TableToJSON(presetTbl))
 

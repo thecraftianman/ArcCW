@@ -135,7 +135,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     if anim.RareSource and util.SharedRandom("raresource", 0, 1, CurTime()) < (1 / (anim.RareSourceChance or 100)) then
         seq = anim.RareSource
     end
-    seq = self:GetBuff_Hook("Hook_TranslateSequence", seq, _, stable)
+    seq = self:GetBuff_Hook("Hook_TranslateSequence", seq, nil, stable)
 
     if istable(seq) then
         seq["BaseClass"] = nil

@@ -4,7 +4,11 @@ local developercvar = GetConVar("developer")
 function SWEP:SetupShields()
     self:KillShields()
 
-    for i, k in pairs(self.Attachments) do
+    local eles = self:GetActiveElements()
+    local atteles = self.AttachmentElements
+    local owner = self:GetOwner()
+
+    for i, k in ipairs(self.Attachments) do
         if !k then continue end
         if !k.Installed then continue end
 
@@ -12,8 +16,10 @@ function SWEP:SetupShields()
 
         if atttbl.ModelIsShield then
 
-            for _, e in pairs(self:GetActiveElements()) do
-                local ele = self.AttachmentElements[e]
+            local wmelemod, slidemod
+
+            for _, e in ipairs(eles) do
+                local ele = atteles[e]
 
                 if !ele then continue end
 
@@ -33,9 +39,9 @@ function SWEP:SetupShields()
 
             local bonename = atttbl.ShieldBone or "ValveBiped.Bip01_R_Hand"
 
-            local boneindex = self:GetOwner():LookupBone(bonename)
+            local boneindex = owner:LookupBone(bonename)
 
-            local bpos, bang = self:GetOwner():GetBonePosition(boneindex)
+            local bpos, bang = owner:GetBonePosition(boneindex)
 
             local delta = k.SlidePos or 0.5
 
@@ -59,9 +65,9 @@ function SWEP:SetupShields()
             shield.mmRHAe = atttbl.ShieldResistance
 
             shield:SetModel( atttbl.Model )
-            shield:FollowBone( self:GetOwner(), boneindex )
+            shield:FollowBone( owner, boneindex )
             shield:SetPos( apos )
-            shield:SetAngles( self:GetOwner():GetAngles() + ang + (atttbl.ShieldCorrectAng or Angle(0, 0, 0)) )
+            shield:SetAngles( owner:GetAngles() + ang + (atttbl.ShieldCorrectAng or Angle(0, 0, 0)) )
             shield:SetCollisionGroup( COLLISION_GROUP_WORLD )
             shield.Weapon = self
             if developercvar:GetBool() then
@@ -82,15 +88,15 @@ function SWEP:SetupShields()
         end
     end
 
-    for i, k in pairs(self.ShieldProps or {}) do
+    for _, k in pairs(self.ShieldProps or {}) do
         if !k then continue end
         if !k.Model then continue end
 
         local bonename = k.Bone or "ValveBiped.Bip01_R_Hand"
 
-        local boneindex = self:GetOwner():LookupBone(bonename)
+        local boneindex = owner:LookupBone(bonename)
 
-        local bpos, bang = self:GetOwner():GetBonePosition(boneindex)
+        local bpos, bang = owner:GetBonePosition(boneindex)
 
         local pos = k.Pos or Vector(0, 0, 0)
         local ang = k.Ang or Angle(0, 0, 0)
@@ -106,9 +112,9 @@ function SWEP:SetupShields()
         shield.mmRHAe = k.Resistance
 
         shield:SetModel( k.Model )
-        shield:FollowBone( self:GetOwner(), boneindex )
+        shield:FollowBone( owner, boneindex )
         shield:SetPos( apos )
-        shield:SetAngles( self:GetOwner():GetAngles() + ang )
+        shield:SetAngles( owner:GetAngles() + ang )
         shield:SetCollisionGroup( COLLISION_GROUP_WORLD )
         shield.Weapon = self
         if developercvar:GetBool() then
@@ -130,7 +136,7 @@ function SWEP:SetupShields()
 end
 
 function SWEP:KillShields()
-    for i, k in pairs(self.Shields) do
+    for _, k in pairs(self.Shields) do
         SafeRemoveEntity(k)
     end
 end

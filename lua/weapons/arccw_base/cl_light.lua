@@ -214,12 +214,12 @@ function SWEP:DrawFlashlightsWM()
                 pos = model:GetPos()
                 ang = IsValid(owner) and owner:EyeAngles() or model:GetAngles()
                 dir = ang:Forward()
-                dir_2 = ang:Up()
+                -- dir_2 = ang:Up()
             else
                 local attdata  = model:GetAttachment(att)
                 pos, ang = attdata.Pos, attdata.Ang
                 dir = -ang:Right()
-                dir_2 = ang:Up()
+                -- dir_2 = ang:Up()
             end
         end
 
