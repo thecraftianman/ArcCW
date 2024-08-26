@@ -65,8 +65,6 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     absolute = absolute or false
     if !key then return end
 
-    local ct = CurTime()
-
     if self:GetPriorityAnim() and !priority then return end
 
     local owner = self:GetOwner()
@@ -97,7 +95,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     end
 
     local viewpunchtbl = anim.ViewPunchTable
-    if CLIENT and anim.ViewPunchTable then
+    if CLIENT and viewpunchtbl then
         local ownerplayer = owner:IsPlayer()
 
         for _, v in pairs(viewpunchtbl) do
@@ -131,15 +129,17 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     if !vm then return end
     if !IsValid(vm) then return end
 
+    local ct = CurTime()
     local seq = anim.Source
-    if anim.RareSource and util.SharedRandom("raresource", 0, 1, CurTime()) < (1 / (anim.RareSourceChance or 100)) then
+
+    if anim.RareSource and util.SharedRandom("raresource", 0, 1, ct) < (1 / (anim.RareSourceChance or 100)) then
         seq = anim.RareSource
     end
     seq = self:GetBuff_Hook("Hook_TranslateSequence", seq, nil, stable)
 
     if istable(seq) then
         seq["BaseClass"] = nil
-        seq = seq[math.Round(util.SharedRandom("randomseq" .. CurTime(), 1, #seq))]
+        seq = seq[math.Round(util.SharedRandom("randomseq" .. ct, 1, #seq))]
     end
 
     if isstring(seq) then
@@ -199,7 +199,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     if anim.TPAnim then
         local aseq = owner:SelectWeightedSequence(anim.TPAnim)
         if aseq then
-            owner:AddVCDSequenceToGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD, aseq, anim.TPAnimStartTime or 0, true )
+            owner:AddVCDSequenceToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, aseq, anim.TPAnimStartTime or 0, true)
             if !issingleplayer and SERVER then
                 net.Start("arccw_networktpanim")
                     net.WriteEntity(owner)
@@ -235,7 +235,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
         stable.Cam_Offset_Ang = Angle(ang)
     end
 
-    self:SetNextIdle(CurTime() + ttime)
+    self:SetNextIdle(ct + ttime)
 
     return true
 end
@@ -269,15 +269,17 @@ function SWEP:PlayIdleAnimation(pred, stable)
 end
 
 function SWEP:GetAnimKeyTime(key, min)
-    if !self:GetOwner() then return 1 end
+    local owner = self:GetOwner()
+
+    if !owner then return 1 end
 
     local anim = self.Animations[key]
 
     if !anim then return 1 end
 
-    if self:GetOwner():IsNPC() then return anim.Time or 1 end
+    if owner:IsNPC() then return anim.Time or 1 end
 
-    local vm = self:GetOwner():GetViewModel()
+    local vm = owner:GetViewModel()
 
     if !vm or !IsValid(vm) then return 1 end
 

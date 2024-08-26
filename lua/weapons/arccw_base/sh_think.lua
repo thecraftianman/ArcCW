@@ -104,7 +104,7 @@ function SWEP:Think()
 
     local attackreleased = owner:KeyReleased(IN_ATTACK)
 
-    if ((issingleplayer and SERVER) or (!issingleplayer and true)) and self:GetBuff_Override("Override_TriggerDelay", stable.TriggerDelay, stable) then
+    if ((issingleplayer and SERVER) or !issingleplayer) and self:GetBuff_Override("Override_TriggerDelay", stable.TriggerDelay, stable) then
         if attackreleased and self:GetBuff_Override("Override_TriggerCharge", stable.TriggerCharge, stable) and self:GetTriggerDelta(true) >= 1 then
             self:PrimaryAttack()
         else
@@ -113,7 +113,6 @@ function SWEP:Think()
     end
 
     if firemode.RunawayBurst then
-
         if self:GetBurstCount() > 0 and ((issingleplayer and SERVER) or (!issingleplayer and true)) then
             self:PrimaryAttack()
         end
@@ -127,7 +126,6 @@ function SWEP:Think()
     end
 
     if attackreleased then
-
         if !firemode.RunawayBurst then
             self:SetBurstCount(0)
             stable.LastTriggerTime = -1 -- Cannot fire again until trigger released
@@ -160,7 +158,6 @@ function SWEP:Think()
     elseif self:GetHolster_Time() > 0 then
         self:ExitSights()
     else
-
         -- no it really doesn't, past me
         local sighted = self:GetState() == ArcCW.STATE_SIGHTS
         local toggle = owner:GetInfoNum("arccw_toggleads", 0) >= 1
@@ -185,10 +182,9 @@ function SWEP:Think()
                 self:ExitSights()
             end
         end
-
     end
 
-    if (!issingleplayer and isfirsttimepredicted) or (issingleplayer and true) then
+    if (!issingleplayer and isfirsttimepredicted) or issingleplayer then
         local insprint = self:InSprint(stable)
         local sprintstate = self:GetState() == ArcCW.STATE_SPRINT
 
@@ -215,56 +211,74 @@ function SWEP:Think()
     end
 
     if CLIENT and (issingleplayer or isfirsttimepredicted) then
-        self:ProcessRecoil()
+        self:ProcessRecoil(stable)
     end
 
     if CLIENT and IsValid(vm) then
-
         for i = 1, vm:GetBoneCount() do
             vm:ManipulateBoneScale(i, vec1)
         end
 
-        for i, k in pairs(self:GetBuff_Override("Override_CaseBones", stable.CaseBones, stable) or {}) do
-            if !isnumber(i) then continue end
-            for _, b in pairs(istable(k) and k or {k}) do
-                local bone = vm:LookupBone(b)
+        local casebones = self:GetBuff_Override("Override_CaseBones", stable.CaseBones, stable)
 
-                if !bone then continue end
+        if next(casebones) then
+            local visclip = self:GetVisualClip()
 
-                if self:GetVisualClip() >= i then
-                    vm:ManipulateBoneScale(bone, vec1)
-                else
-                    vm:ManipulateBoneScale(bone, vec0)
+            for i, k in pairs(casebones) do
+                if !isnumber(i) then continue end
+                for _, b in pairs(istable(k) and k or {k}) do
+                    local bone = vm:LookupBone(b)
+
+                    if !bone then continue end
+
+                    if visclip >= i then
+                        vm:ManipulateBoneScale(bone, vec1)
+                    else
+                        vm:ManipulateBoneScale(bone, vec0)
+                    end
                 end
             end
         end
 
-        for i, k in pairs(self:GetBuff_Override("Override_BulletBones", stable.BulletBones, stable) or {}) do
-            if !isnumber(i) then continue end
-            for _, b in pairs(istable(k) and k or {k}) do
-                local bone = vm:LookupBone(b)
+        local bulletbones = self:GetBuff_Override("Override_BulletBones", stable.BulletBones, stable)
 
-                if !bone then continue end
+        if next(bulletbones) then
+            local visbullets = self:GetVisualBullets(stable)
 
-                if self:GetVisualBullets() >= i then
-                    vm:ManipulateBoneScale(bone, vec1)
-                else
-                    vm:ManipulateBoneScale(bone, vec0)
+            for i, k in pairs(bulletbones) do
+                if !isnumber(i) then continue end
+
+                for _, b in pairs(istable(k) and k or {k}) do
+                    local bone = vm:LookupBone(b)
+
+                    if !bone then continue end
+
+                    if visbullets >= i then
+                        vm:ManipulateBoneScale(bone, vec1)
+                    else
+                        vm:ManipulateBoneScale(bone, vec0)
+                    end
                 end
             end
         end
 
-        for i, k in pairs(self:GetBuff_Override("Override_StripperClipBones", stable.StripperClipBones, stable) or {}) do
-            if !isnumber(i) then continue end
-            for _, b in pairs(istable(k) and k or {k}) do
-                local bone = vm:LookupBone(b)
+        local stripperbones = self:GetBuff_Override("Override_StripperClipBones", stable.StripperClipBones, stable)
 
-                if !bone then continue end
+        if next(stripperbones) then
+            local visload = self:GetVisualLoadAmount()
 
-                if self:GetVisualLoadAmount() >= i then
-                    vm:ManipulateBoneScale(bone, vec1)
-                else
-                    vm:ManipulateBoneScale(bone, vec0)
+            for i, k in pairs(stripperbones) do
+                if !isnumber(i) then continue end
+                for _, b in pairs(istable(k) and k or {k}) do
+                    local bone = vm:LookupBone(b)
+
+                    if !bone then continue end
+
+                    if visload >= i then
+                        vm:ManipulateBoneScale(bone, vec1)
+                    else
+                        vm:ManipulateBoneScale(bone, vec0)
+                    end
                 end
             end
         end
@@ -351,41 +365,42 @@ function SWEP:Think()
     end
 
     if self:GetUBGLDebounce() and !owner:KeyDown(IN_RELOAD) then
-        self:SetUBGLDebounce( false )
+        self:SetUBGLDebounce(false)
     end
 end
 
 local lst = SysTime()
 local timescalecvar = GetConVar("host_timescale")
 
-function SWEP:ProcessRecoil()
+function SWEP:ProcessRecoil(stable)
+    stable = stable or self:GetTable()
     local owner = self:GetOwner()
     local ft = (SysTime() - (lst or SysTime())) * timescalecvar:GetFloat()
     local newang = owner:EyeAngles()
-    -- local r = self.RecoilAmount -- self:GetNWFloat("recoil", 0)
-    -- local rs = self.RecoilAmountSide -- self:GetNWFloat("recoilside", 0)
+    -- local r = stable.RecoilAmount -- self:GetNWFloat("recoil", 0)
+    -- local rs = stable.RecoilAmountSide -- self:GetNWFloat("recoilside", 0)
 
     local ra = Angle(ang0)
 
-    ra = ra + (self:GetBuff_Override("Override_RecoilDirection", self.RecoilDirection) * self.RecoilAmount * 0.5)
-    ra = ra + (self:GetBuff_Override("Override_RecoilDirectionSide", self.RecoilDirectionSide) * self.RecoilAmountSide * 0.5)
+    ra = ra + (self:GetBuff_Override("Override_RecoilDirection", stable.RecoilDirection, stable) * stable.RecoilAmount * 0.5)
+    ra = ra + (self:GetBuff_Override("Override_RecoilDirectionSide", stable.RecoilDirectionSide, stable) * stable.RecoilAmountSide * 0.5)
 
     newang = newang - ra
 
-    local rpb = self.RecoilPunchBack
-    local rps = self.RecoilPunchSide
-    local rpu = self.RecoilPunchUp
+    local rpb = stable.RecoilPunchBack
+    local rps = stable.RecoilPunchSide
+    local rpu = stable.RecoilPunchUp
 
     if rpb != 0 then
-        self.RecoilPunchBack = math.Approach(rpb, 0, ft * rpb * 10)
+        stable.RecoilPunchBack = math.Approach(rpb, 0, ft * rpb * 10)
     end
 
     if rps != 0 then
-        self.RecoilPunchSide = math.Approach(rps, 0, ft * rps * 5)
+        stable.RecoilPunchSide = math.Approach(rps, 0, ft * rps * 5)
     end
 
     if rpu != 0 then
-        self.RecoilPunchUp = math.Approach(rpu, 0, ft * rpu * 5)
+        stable.RecoilPunchUp = math.Approach(rpu, 0, ft * rpu * 5)
     end
 
     lst = SysTime()

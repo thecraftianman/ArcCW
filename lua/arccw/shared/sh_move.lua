@@ -6,7 +6,7 @@ function ArcCW.Move(ply, mv, cmd)
     local wpn = ply:GetActiveWeapon()
     local wpntbl = wpn:GetTable()
 
-    if !wpn.ArcCW then return end
+    if !wpntbl or !wpntbl.ArcCW then return end
 
     local basespd = (Vector(cmd:GetForwardMove(), cmd:GetUpMove(), cmd:GetSideMove())):LengthSqr()
 

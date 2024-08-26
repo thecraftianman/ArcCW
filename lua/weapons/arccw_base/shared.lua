@@ -856,7 +856,11 @@ function SWEP:SetState(v)
 end
 
 function SWEP:GetState(v)
-    if !issingleplayer and CLIENT and self.State then return self.State end
+    if !issingleplayer and CLIENT then
+        local state = self.State
+        if state then return state end
+    end
+
     return self:GetNWState(v)
 end
 

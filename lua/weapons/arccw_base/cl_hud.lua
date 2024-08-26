@@ -65,67 +65,80 @@ local lastwpn = ""
 local lastinfo = {ammo = 0, clip = 0, firemode = "", plus = 0}
 local lastinfotime = 0
 
-function SWEP:GetHUDData()
-    local capacity = self:GetCapacity()
-    local data = {
-        clip = math.Round(vclip or self:Clip1()),
-        ammo = math.Round(vreserve or self:Ammo1()),
-        bars = self:GetFiremodeBars(),
-        mode = self:GetFiremodeName(),
-        ammotype = self.Primary.Ammo,
-        ammotype2 = self.Secondary.Ammo,
-        heat_enabled        = self:HeatEnabled(),
-        heat_name           = translate("ui.heat"),
-        heat_level          = self:GetHeat(),
-        heat_maxlevel       = self:GetMaxHeat(),
-        heat_locked         = self:GetHeatLocked(),
-    }
+local lasthuddata = {}
+local lasthuddatatime = 0
 
-    if data.clip > capacity then
-        data.plus = data.clip - capacity
-        data.clip = capacity
-    end
+function SWEP:GetHUDData(stable)
+    local data = lasthuddata
+    local curtime = CurTime()
 
-    local infammo, btmless = self:HasInfiniteAmmo(), self:HasBottomlessClip()
-    data.infammo = infammo
-    data.btmless = btmless
+    if curtime > lasthuddatatime then
+        stable = stable or self:GetTable()
+        local capacity = self:GetCapacity()
+        data = {
+            clip = math.Round(vclip or self:Clip1()),
+            ammo = math.Round(vreserve or self:Ammo1()),
+            bars = self:GetFiremodeBars(),
+            mode = self:GetFiremodeName(),
+            ammotype = stable.Primary.Ammo,
+            ammotype2 = stable.Secondary.Ammo,
+            heat_enabled        = self:HeatEnabled(),
+            heat_name           = translate("ui.heat"),
+            heat_level          = self:GetHeat(),
+            heat_maxlevel       = self:GetMaxHeat(),
+            heat_locked         = self:GetHeatLocked(),
+        }
 
-    if self.PrimaryBash or self:Clip1() == -1 or capacity == 0 or self.Primary.ClipSize == -1 then
-        data.clip = "-"
-    end
-    if self.PrimaryBash then
-        data.ammo = "-"
-    end
-
-    if self:GetBuff_Override("UBGL") then
-        data.clip2 = math.Round(vclip2 or self:Clip2())
-
-        local ubglammo = self:GetBuff_Override("UBGL_Ammo")
-        if ubglammo then
-            local owner = self:GetOwner()
-            data.ammo2 = tostring(math.Round(vreserve2 or owner:GetAmmoCount(ubglammo)))
-            data.ubgl = self:Clip2() + owner:GetAmmoCount(ubglammo)
+        if data.clip > capacity then
+            data.plus = data.clip - capacity
+            data.clip = capacity
         end
 
-        local ubglcapacity = self:GetBuff_Override("UBGL_Capacity")
-        if data.clip2 > ubglcapacity then
-            data.plus2 = (data.clip2 - ubglcapacity)
-            data.clip2 = ubglcapacity
-        end
-    end
+        local infammo, btmless = self:HasInfiniteAmmo(), self:HasBottomlessClip(stable)
+        data.infammo = infammo
+        data.btmless = btmless
 
-    do
-        if infammo then
-            data.ammo = btmless and data.ammo or "-"
-            data.clip = self.Throwing and "∞" or data.clip
+        local primarybash = stable.PrimaryBash
+        if primarybash or self:Clip1() == -1 or capacity == 0 or stable.Primary.ClipSize == -1 then
+            data.clip = "-"
         end
-        if btmless then
-            data.clip = infammo and "∞" or data.ammo
+        if primarybash then
             data.ammo = "-"
         end
-    end
 
-    data = self:GetBuff_Hook("Hook_GetHUDData", data) or data
+        if self:GetBuff_Override("UBGL", _, stable) then
+            data.clip2 = math.Round(vclip2 or self:Clip2())
+
+            local ubglammo = self:GetBuff_Override("UBGL_Ammo", _, stable)
+            if ubglammo then
+                local owner = self:GetOwner()
+                data.ammo2 = tostring(math.Round(vreserve2 or owner:GetAmmoCount(ubglammo)))
+                data.ubgl = self:Clip2() + owner:GetAmmoCount(ubglammo)
+            end
+
+            local ubglcapacity = self:GetBuff_Override("UBGL_Capacity", _, stable)
+            if data.clip2 > ubglcapacity then
+                data.plus2 = (data.clip2 - ubglcapacity)
+                data.clip2 = ubglcapacity
+            end
+        end
+
+        do
+            if infammo then
+                data.ammo = btmless and data.ammo or "-"
+                data.clip = stable.Throwing and "∞" or data.clip
+            end
+            if btmless then
+                data.clip = infammo and "∞" or data.ammo
+                data.ammo = "-"
+            end
+        end
+
+        data = self:GetBuff_Hook("Hook_GetHUDData", data, _, stable) or data
+
+        lasthuddata = data
+        lasthuddatatime = curtime + 0.05
+    end
 
     return data
 end
@@ -368,9 +381,10 @@ function SWEP:DrawHUD()
     if !drawhudcvar:GetBool() then return false end
 
     local owner = self:GetOwner()
+    local stable = self:GetTable()
 
     if self:GetState() != ArcCW.STATE_CUSTOMIZE then
-        self:GetBuff_Hook("Hook_DrawHUD")
+        self:GetBuff_Hook("Hook_DrawHUD", _, _, stable)
     end
 
     local airgap = ScreenScaleMulti(8)
@@ -380,16 +394,13 @@ function SWEP:DrawHUD()
         h = ScreenScaleMulti(48),
     }
 
-    local data = self:GetHUDData()
+    local data = self:GetHUDData(stable)
 
     if data.heat_locked then
         col2 = col3
     end
 
     local curTime = CurTime()
-    --local mode = self:GetFiremodeName()
-
-    local muzz = self:GetBuff_Override("Override_MuzzleEffectAttachment") or self.MuzzleEffectAttachment or 1
 
     local fmbars = ArcCW.ConVars["hud_fcgbars"]:GetBool() and string.len( self:GetFiremodeBars() or "-----" ) != 0
 
@@ -466,6 +477,7 @@ function SWEP:DrawHUD()
                 local vm = owner:GetViewModel()
 
                 if vm and vm:IsValid() then
+                    local muzz = self:GetBuff_Override("Override_MuzzleEffectAttachment", _, stable) or stable.MuzzleEffectAttachment or 1
                     angpos = vm:GetAttachment(muzz)
                 end
             end
@@ -1176,27 +1188,30 @@ function SWEP:DrawHUD()
 end
 
 function SWEP:CustomAmmoDisplay()
-    local data = self:GetHUDData()
-    local disptbl = self.AmmoDisplay or {}
+    local stable = self:GetTable()
+    local data = self:GetHUDData(stable)
+    local disptbl = stable.AmmoDisplay or {}
 
     disptbl.Draw = true -- draw the display?
 
-    if self.Primary.ClipSize > 0 and tonumber(data.clip) then
+    local primaryclip = stable.Primary.ClipSize
+
+    if primaryclip > 0 and tonumber(data.clip) then
         local plus = tonumber(data.plus) or 0
         disptbl.PrimaryClip = tonumber(data.clip) + plus -- amount in clip
     end
 
-    if self.Primary.ClipSize > 0 and tonumber(data.ammo) then
+    if primaryclip > 0 and tonumber(data.ammo) then
         disptbl.PrimaryAmmo = tonumber(data.ammo) -- amount in reserve
     end
 
     if true then
-        local ubglammo = self:GetBuff_Override("UBGL_Ammo")
+        local ubglammo = self:GetBuff_Override("UBGL_Ammo", _, stable)
         if ubglammo then
             disptbl.SecondaryAmmo = self:Clip2() + self:GetOwner():GetAmmoCount(ubglammo) -- amount of secondary ammo
         end
     end
 
-    self.AmmoDisplay = disptbl
+    stable.AmmoDisplay = disptbl
     return disptbl -- return the table
 end

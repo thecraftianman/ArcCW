@@ -190,7 +190,7 @@ function SWEP:Step_Process(_, _, velocity, stable)
     if onground then
         -- oh no it says sex tra
         local sextra = vector_origin
-        if (state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint() and !self:SelectAnimation("idle_sprint")) or true then
+        if (state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint() and !self:SelectAnimation("idle_sprint", stable)) or true then
             sextra = LerpVector(sprd, vector_origin, sextra_vec)
         end
 
@@ -753,7 +753,7 @@ function SWEP:DrawWorldModel()
         srf.DrawText(self.PrintName)
 
         local icons = {}
-        for i, slot in pairs(self.Attachments or {}) do
+        for _, slot in pairs(self.Attachments or {}) do
             if slot.Installed then
                 local atttbl = ArcCW.AttachmentTable[slot.Installed]
                 if !atttbl then continue end
@@ -849,18 +849,19 @@ function SWEP:PreDrawViewModel(vm)
         self:FormCheapScope()
     end
 
-    local coolFOV = self.CurrentViewModelFOV or self.ViewModelFOV
+    local stable = self:GetTable()
+    local coolFOV = stable.CurrentViewModelFOV or stable.ViewModelFOV
 
     if ArcCW.VMInRT then
         local mag = asight.ScopeMagnification
-        coolFOV = self.ViewModelFOV - mag * 4 - (ArcCW.ConVars["vm_add_ads"]:GetFloat() * 3 or 0)
+        coolFOV = stable.ViewModelFOV - mag * 4 - (ArcCW.ConVars["vm_add_ads"]:GetFloat() * 3 or 0)
         ArcCW.VMInRT = false
     end
 
     cam.Start3D(EyePos(), EyeAngles(), self:QuickFOVix(coolFOV), nil, nil, nil, nil, 0.5, 1000)
     cam.IgnoreZ(true)
     self:DrawCustomModel(false)
-    self:DoLHIK()
+    self:DoLHIK(stable)
 
     if !ArcCW.Overdraw then
         self:DoLaser(false, true)
@@ -869,8 +870,8 @@ function SWEP:PreDrawViewModel(vm)
     -- patrol
     if POSTVMDONE == false and POSTVMDONE_TIME <= CurTime() then
         POSTVMDONE_TIME = CurTime() + 1
-        print( "[ArcCW] Warning: PostDrawViewModel failed response!! cam.End3D errors may be inbound!! You may have an addon conflict!!")
-        print( "[ArcCW] Follow the troubleshooting guide at https://github.com/HaodongMo/ArcCW/wiki/Help-&-Troubleshooting#camend3d-errors")
+        print("[ArcCW] Warning: PostDrawViewModel failed response!! cam.End3D errors may be inbound!! You may have an addon conflict!!")
+        print("[ArcCW] Follow the troubleshooting guide at https://github.com/HaodongMo/ArcCW/wiki/Help-&-Troubleshooting#camend3d-errors")
     end
     POSTVMDONE = false
 end

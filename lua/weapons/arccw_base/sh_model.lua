@@ -126,7 +126,8 @@ local function ScaleModel(model, vscale)
     model:EnableMatrix("RenderMultiply", scale)
 end
 
-function SWEP:SetupModel(wm)
+function SWEP:SetupModel(wm, stable)
+    stable = stable or self:GetTable()
     local elements = {}
 
     local owner = self:GetOwner()
@@ -134,60 +135,81 @@ function SWEP:SetupModel(wm)
 
     -- local og = weapons.Get(self:GetClass())
 
-    self.PrintName = self.OldPrintName or weapons.Get(self:GetClass()).PrintName -- og.PrintName
+    stable.PrintName = stable.OldPrintName or weapons.Get(self:GetClass()).PrintName -- og.PrintName
     local prefix, suffix = "", ""
 
     local activeeles = self:GetActiveElements(true)
+    local vm = owner:GetViewModel()
 
     if CLIENT and !wm then
-        local vm = owner:GetViewModel()
+        local casebgs = self:GetBuff_Override("Override_CaseBGs", stable.CaseBGs, stable)
+        local bulletbgs = self:GetBuff_Override("Override_BulletBGs", stable.BulletBGs, stable)
+        local stripperbgs = self:GetBuff_Override("Override_StripperClipBGs", stable.StripperClipBGs, stable)
+
+        local caseoverride = next(casebgs)
+        local bulletoverride = next(bulletbgs)
+        local stripperoverride = next(stripperbgs)
+
+        local locply = LocalPlayer()
 
         vm.RenderOverride = function(v)
-            if !self or !self.ArcCW then v.RenderOverride = nil return end
-            local wep = LocalPlayer():GetActiveWeapon()
+            if !self or !stable.ArcCW then v.RenderOverride = nil return end
+            local wep = locply:GetActiveWeapon()
             if wep and !wep.ArcCW then v.RenderOverride = nil return end
             -- self:RefreshBGs() -- NOTE: Testing; not including this may break things
 
-            for i, k in pairs(self:GetBuff_Override("Override_CaseBGs", self.CaseBGs) or {}) do
-                if !isnumber(i) then continue end
-                local bone = vm:LookupBone(k)
+            if caseoverride then
+                local visclip = self:GetVisualClip()
 
-                if !bone then continue end
+                for i, k in pairs(casebgs) do
+                    if !isnumber(i) then continue end
+                    local bone = vm:LookupBone(k)
 
-                if self:GetVisualClip() >= i then
-                    vm:SetBodygroup(k.ind, k.bg)
-                else
-                    vm:SetBodygroup(k.ind, 0)
+                    if !bone then continue end
+
+                    if visclip >= i then
+                        vm:SetBodygroup(k.ind, k.bg)
+                    else
+                        vm:SetBodygroup(k.ind, 0)
+                    end
                 end
             end
 
-            for i, k in pairs(self:GetBuff_Override("Override_BulletBGs", self.BulletBGs) or {}) do
-                if !isnumber(i) then continue end
-                local bone = vm:LookupBone(k)
+            if bulletoverride then
+                local visbullets = self:GetVisualBullets(stable)
 
-                if !bone then continue end
+                for i, k in pairs(bulletbgs) do
+                    if !isnumber(i) then continue end
+                    local bone = vm:LookupBone(k)
 
-                if self:GetVisualBullets() >= i then
-                    vm:SetBodygroup(k.ind, k.bg)
-                else
-                    vm:SetBodygroup(k.ind, 0)
+                    if !bone then continue end
+
+                    if visbullets >= i then
+                        vm:SetBodygroup(k.ind, k.bg)
+                    else
+                        vm:SetBodygroup(k.ind, 0)
+                    end
                 end
             end
 
-            for i, k in pairs(self:GetBuff_Override("Override_StripperClipBGs", self.StripperClipBGs) or {}) do
-                if !isnumber(i) then continue end
-                local bone = vm:LookupBone(k)
+            if stripperoverride then
+                local visload = self:GetVisualLoadAmount()
 
-                if !bone then continue end
+                for i, k in pairs(stripperbgs) do
+                    if !isnumber(i) then continue end
+                    local bone = vm:LookupBone(k)
 
-                if self:GetVisualLoadAmount() >= i then
-                    vm:SetBodygroup(k.ind, k.bg)
-                else
-                    vm:SetBodygroup(k.ind, 0)
+                    if !bone then continue end
+
+                    if visload >= i then
+                        vm:SetBodygroup(k.ind, k.bg)
+                    else
+                        vm:SetBodygroup(k.ind, 0)
+                    end
                 end
             end
 
-            if !self.HideViewmodel then
+            if !stable.HideViewmodel then
                 ArcCW.VM_OverDraw = true
                 v:DrawModel()
                 ArcCW.VM_OverDraw = false
@@ -198,27 +220,27 @@ function SWEP:SetupModel(wm)
     if CLIENT then
 
         if wm then
-            self:KillModel(self.WM)
-            self.WM = elements
+            self:KillModel(stable.WM)
+            stable.WM = elements
         else
-            self:KillModel(self.VM)
-            self.VM = elements
+            self:KillModel(stable.VM)
+            stable.VM = elements
 
             if !IsValid(owner) or owner:IsNPC() then
                 return
             end
 
-            if !IsValid(owner:GetViewModel()) then
+            if !IsValid(vm) then
                 self:SetTimer(0.5, function()
-                    self:SetupModel(wm)
+                    self:SetupModel(wm, stable)
                 end)
                 return
             end
 
-            owner:GetViewModel():SetupBones()
+            vm:SetupBones()
         end
 
-        render.OverrideDepthEnable( true, true )
+        render.OverrideDepthEnable(true, true)
 
     end
 
@@ -253,11 +275,12 @@ function SWEP:SetupModel(wm)
     -- end
 
     if wm and CLIENT then
-        local sm = self.WorldModel
-        if self.MirrorVMWM then
-            sm = self.MirrorWorldModel or self.ViewModel
+        local sm = stable.WorldModel
+        if stable.MirrorVMWM then
+            sm = stable.MirrorWorldModel or stable.ViewModel
         end
-        local vs = (self.WorldModelOffset or {}).scale or 1
+        local wmoffset = stable.WorldModelOffset
+        local vs = (wmoffset or {}).scale or 1
         vscale = Vector(vs, vs, vs)
         local model = ClientsideModel(sm)
 
@@ -268,9 +291,9 @@ function SWEP:SetupModel(wm)
         model:DrawShadow(false)
         model:SetPredictable(false)
         model.Weapon = self
-        model:SetSkin(self.DefaultWMSkin or 0)
+        model:SetSkin(stable.DefaultWMSkin or 0)
         --model:SetBodyGroups(self.DefaultWMBodygroups or "")
-        ArcCW.SetBodyGroups(model, self.DefaultWMBodygroups or "")
+        ArcCW.SetBodyGroups(model, stable.DefaultWMBodygroups or "")
         ScaleModel(model, vscale)
         model:SetupBones()
         local element = {}
@@ -279,14 +302,14 @@ function SWEP:SetupModel(wm)
         element.IsBaseWM = true
         element.WMBone = "ValveBiped.Bip01_R_Hand"
 
-        if self.WorldModelOffset then
+        if wmoffset then
             if !IsValid(owner) then
                 element.OffsetAng = Angle(0, 0, 0)
                 element.OffsetPos = Vector(0, 0, 0)
             else
-                element.OffsetAng = self.WorldModelOffset.ang or Angle(0, 0, 0)
-                element.OffsetPos = self.WorldModelOffset.pos or Vector(0, 0, 0)
-                element.WMBone = self.WorldModelOffset.bone or element.WMBone
+                element.OffsetAng = wmoffset.ang or Angle(0, 0, 0)
+                element.OffsetPos = wmoffset.pos or Vector(0, 0, 0)
+                element.WMBone = wmoffset.bone or element.WMBone
             end
             element.BoneMerge = false
         else
@@ -296,7 +319,7 @@ function SWEP:SetupModel(wm)
             element.OffsetAng = Angle(0, 0, 0)
         end
 
-        self.WMModel = model
+        stable.WMModel = model
 
         table.insert(elements, element)
     end
@@ -305,9 +328,9 @@ function SWEP:SetupModel(wm)
         self:AddElement(k, wm)
     end
 
-    local atteles = self.AttachmentElements
+    local atteles = stable.AttachmentElements
 
-    for i, k in ipairs(self.Attachments) do
+    for i, k in ipairs(stable.Attachments) do
         if !k.Installed then continue end
 
         local atttbl = ArcCW.AttachmentTable[k.Installed]
@@ -351,7 +374,7 @@ function SWEP:SetupModel(wm)
         if !model or !IsValid(model) then continue end
 
         if atttbl.BoneMerge then
-            local parent = owner:GetViewModel()
+            local parent = vm
 
             if wm then
                 parent = owner
@@ -423,7 +446,7 @@ function SWEP:SetupModel(wm)
             element.OffsetAng = element.OffsetAng + (atttbl.OffsetAng or Angle(0, 0, 0))
             k.WElement = element
 
-            if self.MirrorVMWM then
+            if stable.MirrorVMWM then
                 element.WMBone = repbone or k.Bone
                 element.OffsetAng = Angle()
                 element.OffsetAng:Set(repang or k.Offset.vang or Angle(0, 0, 0))
@@ -447,7 +470,7 @@ function SWEP:SetupModel(wm)
             local charmscale = vscale
 
             if wm then
-                if self.MirrorVMWM then
+                if stable.MirrorVMWM then
                     charmscale = charmscale * ((k.VMScale or Vector(1, 1, 1)) * (atttbl.ModelScale or 1))
                 else
                     charmscale = charmscale * ((k.WMScale or Vector(1, 1, 1)) * (atttbl.ModelScale or 1))
@@ -475,7 +498,7 @@ function SWEP:SetupModel(wm)
                 charmelement.SubModel = true
 
                 if wm then
-                    if self.MirrorVMWM then
+                    if stable.MirrorVMWM then
                         charmelement.CharmScale = ((k.VMScale or Vector(1, 1, 1)) * (atttbl.ModelScale or 1))
                     else
                         charmelement.CharmScale = ((k.WMScale or Vector(1, 1, 1)) * (atttbl.ModelScale or 1))
@@ -492,7 +515,7 @@ function SWEP:SetupModel(wm)
             local hspmodel = ClientsideModel(atttbl.Model)
 
             if k.BoneMerge then
-                local parent = owner:GetViewModel()
+                local parent = vm
 
                 if wm then
                     parent = owner
@@ -529,7 +552,7 @@ function SWEP:SetupModel(wm)
             if wm then
                 k.WMuzzleDeviceElement = hspelement
 
-                if self.MirrorVMWM then
+                if stable.MirrorVMWM then
                     hspelement.WMBone = k.Bone
                 end
             else
@@ -546,7 +569,7 @@ function SWEP:SetupModel(wm)
             local hspmodel = ClientsideModel(atttbl.HolosightPiece)
 
             if k.BoneMerge then
-                local parent = owner:GetViewModel()
+                local parent = vm
 
                 if wm then
                     parent = owner
@@ -580,7 +603,7 @@ function SWEP:SetupModel(wm)
             if !wm then
                 k.HSPElement = hspelement
             else
-                if self.MirrorVMWM then
+                if stable.MirrorVMWM then
                     hspelement.WMBone = k.Bone
                 end
             end
@@ -616,7 +639,7 @@ function SWEP:SetupModel(wm)
         end
 
         if atttbl.LHIK_GunDriver then
-            local reflectmodel = ClientsideModel(self.ViewModel)
+            local reflectmodel = ClientsideModel(stable.ViewModel)
 
             local reflectelement = {}
             reflectmodel:SetNoDraw(true)
@@ -639,8 +662,8 @@ function SWEP:SetupModel(wm)
 
     if CLIENT then
 
-    if !wm and self.HolosightPiece then
-        local hspmodel = ClientsideModel(self.HolosightPiece)
+    if !wm and stable.HolosightPiece then
+        local hspmodel = ClientsideModel(stable.HolosightPiece)
 
         hspmodel:SetParent(parent)
         hspmodel:AddEffects(EF_BONEMERGE)
@@ -658,7 +681,7 @@ function SWEP:SetupModel(wm)
         hspelement.NoDraw = false
 
         if !wm then
-            self.HSPElement = hspelement
+            stable.HSPElement = hspelement
         end
 
         table.insert(elements, hspelement)
@@ -682,16 +705,16 @@ function SWEP:SetupModel(wm)
     end
 
     if wm then
-        self.WM = elements
+        stable.WM = elements
         self:KillModel(ArcCW.CSModels[eid].WModels)
         ArcCW.CSModels[eid].WModels = elements
     else
-        self.VM = elements
+        stable.VM = elements
         self:KillModel(ArcCW.CSModels[eid].VModels)
         ArcCW.CSModels[eid].VModels = elements
     end
 
-    render.OverrideDepthEnable( false, true )
+    render.OverrideDepthEnable(false, true)
 
     if !wm then
     --     self:CreateFlashlightsWM()
@@ -701,9 +724,9 @@ function SWEP:SetupModel(wm)
 
     end
 
-    self.PrintName = prefix .. (self:GetBuff_Hook("Hook_NameChange", self.PrintName) or self.PrintName) .. suffix
-    self.Trivia_Class = self:GetBuff_Hook("Hook_ClassChange", self.Trivia_Class) or self.Trivia_Class
-    self.Trivia_Desc = self:GetBuff_Hook("Hook_DescChange", self.Trivia_Desc) or self.Trivia_Desc
+    stable.PrintName = prefix .. (self:GetBuff_Hook("Hook_NameChange", stable.PrintName, _, stable) or stable.PrintName) .. suffix
+    stable.Trivia_Class = self:GetBuff_Hook("Hook_ClassChange", stable.Trivia_Class, _, stable) or stable.Trivia_Class
+    stable.Trivia_Desc = self:GetBuff_Hook("Hook_DescChange", stable.Trivia_Desc, _, stable) or stable.Trivia_Desc
 
     self:SetupActiveSights()
 
@@ -720,10 +743,15 @@ function SWEP:KillModel(models)
     end
 end
 
-function SWEP:DrawCustomModel(wm, origin, angle)
+function SWEP:DrawCustomModel(wm, origin, angle, stable)
     if ArcCW.VM_OverDraw then return end
+
+    stable = stable or self:GetTable()
     local owner = self:GetOwner()
-    local disttoeye = self:GetPos():DistToSqr(EyePos())
+    local ownervalid = IsValid(owner)
+    local ownervm = ownervalid and owner:GetViewModel() or nil
+    local weppos = self:GetPos()
+    local disttoeye = weppos:DistToSqr(EyePos())
     local visibility = math.pow(ArcCW.ConVars["visibility"]:GetInt(), 2)
     local always = false
     if ArcCW.ConVars["visibility"]:GetInt() < 0 or owner == LocalPlayer() then
@@ -740,53 +768,53 @@ function SWEP:DrawCustomModel(wm, origin, angle)
         wm = true --VM drawing borked
     end
 
-    -- self:KillModel(self.VM)
-    -- self:KillModel(self.WM)
-    -- self.VM = nil
-    -- self.WM = nil
+    -- self:KillModel(stable.VM)
+    -- self:KillModel(stable.WM)
+    -- stable.VM = nil
+    -- stable.WM = nil
 
     local vscale = 1
 
     if wm then
         if !always and disttoeye >= visibility * 2 then return end
 
-        if !self.WM then
+        if !stable.WM then
             self:SetupModel(wm)
         end
 
-        models = self.WM
+        models = stable.WM
 
         vm = owner
 
-        if self.MirrorVMWM or !IsValid(owner) then
-            vm = self.WMModel or self
+        if stable.MirrorVMWM or !ownervalid then
+            vm = stable.WMModel or self
         end
 
-        if self.WorldModelOffset then
-            vscale = self.WorldModelOffset.scale or 1
+        if stable.WorldModelOffset then
+            vscale = stable.WorldModelOffset.scale or 1
         end
 
         if !vm or !IsValid(vm) then return end
     else
-        if !self.VM then
+        if !stable.VM then
             self:SetupModel(wm)
         end
 
-        vm = owner:GetViewModel()
+        vm = ownervm
 
         if !vm or !IsValid(vm) then return end
 
-        models = self.VM
+        models = stable.VM
 
-        -- if self.HSPElement then
-        --     self.HSPElement.Model:DrawModel()
+        -- if stable.HSPElement then
+        --     stable.HSPElement.Model:DrawModel()
         -- end
     end
 
     local activeeles = self:GetActiveElements()
-    local atts = self.Attachments
-    local atteles = self.AttachmentElements
-    local mirrorvmwm = self.MirrorVMWM
+    local atts = stable.Attachments
+    local atteles = stable.AttachmentElements
+    local mirrorvmwm = stable.MirrorVMWM
 
     for i = 1, #models do
         local k = models[i]
@@ -805,11 +833,11 @@ function SWEP:DrawCustomModel(wm, origin, angle)
         -- end
 
         if k.IsBaseVM and !custompos then
-            k.Model:SetParent(owner:GetViewModel())
+            k.Model:SetParent(ownervm)
             vm = self
         elseif k.IsBaseWM then
-            if IsValid(owner) and !custompos then
-                local wmo = self.WorldModelOffset
+            if ownervalid and !custompos then
+                local wmo = stable.WorldModelOffset
                 if !wmo then
                     wmo = {pos = vector_origin, ang = angle_zero}
                 end
@@ -827,8 +855,7 @@ function SWEP:DrawCustomModel(wm, origin, angle)
             continue
         else
             if wm and mirrorvmwm then
-                vm = self.WMModel or self
-                -- vm = self
+                vm = stable.WMModel or self
             end
 
             if wm and !always and disttoeye >= visibility then
@@ -850,8 +877,8 @@ function SWEP:DrawCustomModel(wm, origin, angle)
         local bpos, bang
         local offset = k.OffsetPos
 
-        if k.IsBaseWM and !IsValid(owner) then
-            bpos = self:GetPos()
+        if k.IsBaseWM and !ownervalid then
+            bpos = weppos
             bang = self:GetAngles()
         elseif bonename then
             local boneindex = vm:LookupBone(bonename)
@@ -869,7 +896,7 @@ function SWEP:DrawCustomModel(wm, origin, angle)
                 end
             end
 
-            if custompos and (!mirrorvmwm or (mirrorvmwm and k.Model:GetModel() == self.ViewModel) ) then
+            if custompos and (!mirrorvmwm or (mirrorvmwm and k.Model:GetModel() == stable.ViewModel) ) then
                 bpos = origin
                 bang = angle
             end
