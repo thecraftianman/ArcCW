@@ -139,7 +139,7 @@ function SWEP:SetupModel(wm, stable)
     local prefix, suffix = "", ""
 
     local activeeles = self:GetActiveElements(true)
-    local vm = owner:GetViewModel()
+    local vm = !wm and owner:GetViewModel()
 
     if CLIENT and !wm then
         local casebgs = self:GetBuff_Override("Override_CaseBGs", stable.CaseBGs, stable)
