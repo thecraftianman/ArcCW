@@ -15,7 +15,7 @@ function SWEP:Think()
 
     local stable = self:GetTable()
 
-    if self:GetState() == ArcCW.STATE_DISABLE and !self:GetPriorityAnim() then
+    if self:GetState(stable) == ArcCW.STATE_DISABLE and !self:GetPriorityAnim(stable) then
         self:SetState(ArcCW.STATE_IDLE)
 
         if CLIENT and stable.UnReady then
@@ -63,7 +63,7 @@ function SWEP:Think()
     end
 
     local inbipod = self:InBipod()
-    local firemode = self:GetCurrentFiremode()
+    local firemode = self:GetCurrentFiremode(stable)
 
     if self:GetNeedCycle() and !stable.Throwing and !self:GetReloading() and self:GetWeaponOpDelay() < curtime and self:GetNextPrimaryFire() < curtime and -- Adding this delays bolting if the RPM is too low, but removing it may reintroduce the double pump bug. Increasing the RPM allows you to shoot twice on many multiplayer servers. Sure would be convenient if everything just worked nicely
             (!ArcCW.ConVars["clicktocycle"]:GetBool() and (firemode.Mode == 2 or !owner:KeyDown(IN_ATTACK))
@@ -153,13 +153,13 @@ function SWEP:Think()
         end
     end
     ]]
-    if (stable.Sighted or self:GetState() == ArcCW.STATE_SIGHTS) and self:GetBuff_Hook("Hook_ShouldNotSight", _, _, stable) then
+    if (stable.Sighted or self:GetState(stable) == ArcCW.STATE_SIGHTS) and self:GetBuff_Hook("Hook_ShouldNotSight", _, _, stable) then
         self:ExitSights()
     elseif self:GetHolster_Time() > 0 then
         self:ExitSights()
     else
         -- no it really doesn't, past me
-        local sighted = self:GetState() == ArcCW.STATE_SIGHTS
+        local sighted = self:GetState(stable) == ArcCW.STATE_SIGHTS
         local toggle = owner:GetInfoNum("arccw_toggleads", 0) >= 1
         local suitzoom = owner:KeyDown(IN_ZOOM)
         local sp_cl = issingleplayer and CLIENT
@@ -186,7 +186,7 @@ function SWEP:Think()
 
     if (!issingleplayer and isfirsttimepredicted) or issingleplayer then
         local insprint = self:InSprint(stable)
-        local sprintstate = self:GetState() == ArcCW.STATE_SPRINT
+        local sprintstate = self:GetState(stable) == ArcCW.STATE_SPRINT
 
         if insprint and !sprintstate then
             self:EnterSprint()
@@ -196,7 +196,7 @@ function SWEP:Think()
     end
 
     if issingleplayer or isfirsttimepredicted then
-        local state = self:GetState()
+        local state = self:GetState(stable)
         local sightstate = state == ArcCW.STATE_SIGHTS and 0 or 1
         local sprintstate = state == ArcCW.STATE_SPRINT and 1 or 0
         local sightdelta = self:GetSightDelta()
@@ -215,9 +215,10 @@ function SWEP:Think()
     end
 
     if CLIENT and IsValid(vm) then
-        for i = 1, vm:GetBoneCount() do
-            vm:ManipulateBoneScale(i, vec1)
-        end
+        -- TODO: Figure out if this is actually needed for something
+        --for i = 1, vm:GetBoneCount() do
+            --vm:ManipulateBoneScale(i, vec1)
+        --end
 
         local casebones = self:GetBuff_Override("Override_CaseBones", stable.CaseBones, stable)
 
@@ -293,7 +294,7 @@ function SWEP:Think()
         --     gui.EnableScreenClicker(false)
         -- end
 
-        -- if self:GetState() != ArcCW.STATE_CUSTOMIZE then
+        -- if self:GetState(stable) != ArcCW.STATE_CUSTOMIZE then
         --     self:CloseCustomizeHUD()
         -- else
         --     self:OpenCustomizeHUD()

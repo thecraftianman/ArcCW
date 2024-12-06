@@ -31,7 +31,7 @@ ArcCW.BindToEffect_Unique = {
     [ArcCW.KEY_MELEE]           = "melee",
 }
 
-local lastpressZ = 0
+-- local lastpressZ = 0
 local lastpressE = 0
 
 function ArcCW:GetBind(bind)
@@ -94,7 +94,7 @@ local function ArcCW_PlayerBindPress(ply, bind, pressed)
 
     local block = false
 
-    if GetConVar("arccw_nohl2flash"):GetBool() and bind == "impulse 100" then
+    if ArcCW.ConVars["nohl2flash"]:GetBool() and bind == "impulse 100" then
         ToggleAtts(wep)
 
         if ply:FlashlightIsOn() then return false end -- if hl2 flahslight is on we will turn it off as expected
@@ -106,8 +106,8 @@ local function ArcCW_PlayerBindPress(ply, bind, pressed)
     bind, alt = ArcCW_TranslateBindToEffect(bind)
 
     if bind == "firemode" and (alt or true) and !ply:KeyDown(IN_USE) then
-		SendNet("arccw_firemode")
-		wep:ChangeFiremode()
+        SendNet("arccw_firemode")
+        wep:ChangeFiremode()
 
         block = true
     elseif bind == "inv" and !ply:KeyDown(IN_USE) and ArcCW.ConVars["enable_customization"]:GetInt() > -1 then

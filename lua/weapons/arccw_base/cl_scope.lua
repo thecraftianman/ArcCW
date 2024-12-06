@@ -67,9 +67,11 @@ function SWEP:OurViewPunch(angle)
     for i = 1, 3 do self.ViewPunchVelocity[i] = math.Clamp(self.ViewPunchVelocity[i], -180, 180) end
 end
 
-function SWEP:GetOurViewPunchAngles()
+function SWEP:GetOurViewPunchAngles(stable)
+    stable = stable or self:GetTable()
     local a = self:GetOwner():GetViewPunchAngles()
-    for i = 1, 3 do a[i] = a[i] + self.ViewPunchAngle[i] * 10 end
+    local vpang = stable.ViewPunchAngle
+    for i = 1, 3 do a[i] = a[i] + vpang[i] * 10 end
     return a
 end
 

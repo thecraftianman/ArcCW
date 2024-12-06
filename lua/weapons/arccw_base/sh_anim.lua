@@ -17,7 +17,7 @@ function SWEP:SelectAnimation(anim, stable)
         anim = anim .. "_sight"
     end
 
-    if nwstate == ArcCW.STATE_SPRINT and anims[anim .. "_sprint"] and !self:CanShootWhileSprint() then
+    if nwstate == ArcCW.STATE_SPRINT and anims[anim .. "_sprint"] and !self:CanShootWhileSprint(stable) then
         anim = anim .. "_sprint"
     end
 
@@ -25,11 +25,11 @@ function SWEP:SelectAnimation(anim, stable)
         anim = anim .. "_bipod"
     end
 
-    if self:GetState() == ArcCW.STATE_CUSTOMIZE and anims[anim .. "_inspect"] and ((CLIENT and !ArcCW.ConVars["noinspect"]:GetBool()) or (SERVER and self:GetOwner():GetInfoNum("arccw_noinspect", 0))) then
+    if self:GetState(stable) == ArcCW.STATE_CUSTOMIZE and anims[anim .. "_inspect"] and ((CLIENT and !ArcCW.ConVars["noinspect"]:GetBool()) or (SERVER and self:GetOwner():GetInfoNum("arccw_noinspect", 0))) then
         anim = anim .. "_inspect"
     end
 
-    if anims[anim .. "_empty"] and (self:Clip1() == 0 or (self:HasBottomlessClip() and self:Ammo1() == 0)) then
+    if anims[anim .. "_empty"] and (self:Clip1() == 0 or (self:HasBottomlessClip(stable) and self:Ammo1() == 0)) then
         anim = anim .. "_empty"
     end
 
@@ -63,9 +63,10 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
     --skipholster = skipholster or false Unused
     priority = priority or false
     absolute = absolute or false
+    stable = stable or self:GetTable()
     if !key then return end
 
-    if self:GetPriorityAnim() and !priority then return end
+    if self:GetPriorityAnim(stable) and !priority then return end
 
     local owner = self:GetOwner()
 
@@ -80,7 +81,6 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
         net.Send(owner)
     end
 
-    stable = stable or self:GetTable()
     local animtbl = stable.Animations
     local anim = animtbl[key]
     if !anim then return end
@@ -99,7 +99,6 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
         local ownerplayer = owner:IsPlayer()
 
         for _, v in pairs(viewpunchtbl) do
-
             if !v.t then continue end
 
             local st = (v.t * mult) - startfrom
@@ -117,7 +116,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
                 num = stable.Primary.ClipSize - self:Clip1()
             end
             for _ = 1, num do
-                self:DoShellEject()
+                self:DoShellEject(nil, stable)
             end
         end)
     end

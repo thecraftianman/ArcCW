@@ -3,6 +3,8 @@ ArcCW.CSModelPile    = {} -- { {Model = NULL, Weapon = NULL} }
 ArcCW.FlashlightPile = {} -- { {Weapon = NULL, ProjectedTexture = NULL}}
 ArcCW.ReferenceModel = NULL
 
+local developercvar = GetConVar("developer")
+
 local function ArcCW_CollectGarbage()
     local removed, removedents = 0, {}
 
@@ -35,8 +37,8 @@ local function ArcCW_CollectGarbage()
 
     ArcCW.CSModelPile = newpile
 
-    if GetConVar("developer"):GetBool() and removed > 0 then
-        print("Removed " .. tostring(removed) .. " CSModels")
+    if developercvar:GetBool() and removed > 0 then
+        print("[ArcCW] Removed " .. tostring(removed) .. " CSModels")
     end
 end
 
@@ -48,9 +50,11 @@ timer.Create("ArcCW CSModel Garbage Collector", 5, 0, ArcCW_CollectGarbage)
 
 hook.Add("PostDrawEffects", "ArcCW_CleanFlashlights", function()
     local newflashlightpile = {}
+    local locPly = LocalPlayer()
+    local wpn = locPly:GetActiveWeapon()
 
     for _, k in pairs(ArcCW.FlashlightPile) do
-        if IsValid(k.Weapon) and k.Weapon == LocalPlayer():GetActiveWeapon() then
+        if IsValid(k.Weapon) and k.Weapon == wpn then
             table.insert(newflashlightpile, k)
 
             continue
@@ -63,13 +67,11 @@ hook.Add("PostDrawEffects", "ArcCW_CleanFlashlights", function()
 
     ArcCW.FlashlightPile = newflashlightpile
 
-    local wpn = LocalPlayer():GetActiveWeapon()
-
     if !wpn then return end
     if !IsValid(wpn) then return end
     if !wpn.ArcCW then return end
 
-    if GetViewEntity() == LocalPlayer() then return end
+    if GetViewEntity() == locPly then return end
 
     wpn:KillFlashlightsVM()
 end)
@@ -77,8 +79,8 @@ end)
 concommand.Add("arccw_dev_loadallattmodels", function()
     local e = ClientsideModel("models/weapons/v_pistol.mdl")
     print("created subject", e)
-    
-    for i, v in pairs(ArcCW.AttachmentTable) do
+
+    for _, v in pairs(ArcCW.AttachmentTable) do
         if v.Model then
             print("\t- " .. v.Model)
             e:SetModel(v.Model)

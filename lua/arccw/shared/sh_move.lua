@@ -134,7 +134,7 @@ function ArcCW.StartCommand(ply, ucmd)
     if !weptbl.ArcCW then return end
 
     if ucmd:KeyDown(IN_SPEED) and ply:Alive()
-            and wep:GetBurstCount() > 0 and wep:GetCurrentFiremode().RunawayBurst
+            and wep:GetBurstCount() > 0 and wep:GetCurrentFiremode(weptbl).RunawayBurst
             and !wep:CanShootWhileSprint() then
         ucmd:SetButtons(ucmd:GetButtons() - IN_SPEED)
     end

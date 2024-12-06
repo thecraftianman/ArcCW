@@ -132,8 +132,9 @@ function SWEP:GetBuff(buff, defaultnil, defaultvar, stable)
     return result
 end
 
-function SWEP:GetBuff_Stat(buff, slot)
-    local slottbl = self.Attachments[slot]
+function SWEP:GetBuff_Stat(buff, slot, stable)
+    stable = stable or self:GetTable()
+    local slottbl = stable.Attachments[slot]
     if !slottbl then return end
     local atttbl = ArcCW.AttachmentTable[slottbl.Installed]
     if !atttbl then return end
@@ -175,7 +176,7 @@ function SWEP:GetBuff_Hook(buff, data, defaultnil, stable)
             end
         end
 
-        local cfm = self:GetCurrentFiremode()
+        local cfm = self:GetCurrentFiremode(stable)
 
         if cfm and isfunction(cfm[buff]) then
             table.insert(hooks[buff], {cfm[buff], cfm[buff .. "_Priority"] or 0})
@@ -317,7 +318,7 @@ function SWEP:GetBuff_Override(buff, default, stable)
 
         ArcCW.BuffStack = true
 
-        local cfm = self:GetCurrentFiremode()
+        local cfm = self:GetCurrentFiremode(stable)
 
         if cfm and cfm[buff] != nil then
             local pri = cfm[buff .. "_Priority"] or 1
@@ -459,7 +460,7 @@ function SWEP:GetBuff_Mult(buff, stable)
         end
     end
 
-    local cfm = self:GetCurrentFiremode()
+    local cfm = self:GetCurrentFiremode(stable)
 
     if cfm and cfm[buff] then
         mult = mult * cfm[buff]
@@ -571,7 +572,7 @@ function SWEP:GetBuff_Add(buff, stable)
         end
     end
 
-    local cfm = self:GetCurrentFiremode()
+    local cfm = self:GetCurrentFiremode(stable)
 
     if cfm and cfm[buff] then
         add = add + cfm[buff]

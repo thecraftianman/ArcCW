@@ -420,15 +420,18 @@ function SWEP:SwitchActiveSights()
     end
 end
 
-function SWEP:GetActiveSights()
-    if (self.ActiveSight or 1) > table.Count(self.SightTable) then
-        self.ActiveSight = 1
+function SWEP:GetActiveSights(stable)
+    stable = stable or self:GetTable()
+    local sightTable = stable.SightTable
+
+    if (stable.ActiveSight or 1) > #sightTable then
+        stable.ActiveSight = 1
     end
 
-    if table.Count(self.SightTable) == 0 then
-        return self.IronSightStruct
+    if #sightTable == 0 then
+        return stable.IronSightStruct
     else
-        return self.SightTable[self.ActiveSight or 1]
+        return sightTable[stable.ActiveSight or 1]
     end
 end
 

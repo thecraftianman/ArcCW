@@ -85,10 +85,16 @@ end
 function SWEP:PlaySoundTable(soundtable, mult, start, key)
     --if CLIENT and game.SinglePlayer() then return end
 
+    if !next(soundtable) then return end
+
     local owner = self:GetOwner()
+    if !(IsValid(self) and IsValid(owner)) then return end
 
     start = start or 0
     mult  = 1 / (mult or 1)
+
+    local ct = CurTime()
+    local eventtable = self.EventTable
 
     for _, v in pairs(soundtable) do
         if table.IsEmpty(v) then continue end
@@ -100,9 +106,9 @@ function SWEP:PlaySoundTable(soundtable, mult, start, key)
             continue
         end
         if ttime < 0 then continue end
-        if !(IsValid(self) and IsValid(owner)) then continue end
+        --if !(IsValid(self) and IsValid(owner)) then continue end
 
-        local jhon = CurTime() + ttime
+        local jhon = ct + ttime
 
         --[[if game.SinglePlayer() then
             if SERVER then
@@ -115,19 +121,19 @@ function SWEP:PlaySoundTable(soundtable, mult, start, key)
         end]]
 
         -- i may go fucking insane
-        if !self.EventTable[1] then self.EventTable[1] = {} end
+        if !eventtable[1] then eventtable[1] = {} end
 
-        for i, de in ipairs(self.EventTable) do
+        for i, de in ipairs(eventtable) do
             if de[jhon] then
-                if !self.EventTable[i + 1] then
+                if !eventtable[i + 1] then
                     --[[print(CurTime(), "Occupier at " .. i .. ", creating " .. i+1)]]
-                    self.EventTable[i + 1] = {}
+                    eventtable[i + 1] = {}
                     continue
                 end
             else
-                self.EventTable[i][jhon] = table.Copy(v)
-                self.EventTable[i][jhon].StartTime = CurTime()
-                self.EventTable[i][jhon].AnimKey = key
+                eventtable[i][jhon] = table.Copy(v)
+                eventtable[i][jhon].StartTime = CurTime()
+                eventtable[i][jhon].AnimKey = key
                 -- print(CurTime(), "Clean at " .. i)
             end
         end

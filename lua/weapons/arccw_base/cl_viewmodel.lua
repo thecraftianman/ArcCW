@@ -129,7 +129,7 @@ function SWEP:Move_Process(EyePos, EyeAng, velocity, stable)
     local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
     local VMPosOffset_Lerp, VMAngOffset_Lerp = stable.VMPosOffset_Lerp, stable.VMAngOffset_Lerp
     local FT = scrunkly()
-    local sightedmult = (self:GetState() == ArcCW.STATE_SIGHTS and 0.05) or 1
+    local sightedmult = (self:GetState(stable) == ArcCW.STATE_SIGHTS and 0.05) or 1
     local sg = self:GetSightDelta()
     VMPos:Set(EyePos)
     VMAng:Set(EyeAng)
@@ -160,7 +160,7 @@ function SWEP:Step_Process(_, _, velocity, stable)
     local VMPos, VMAng = stable.VMPos, stable.VMAng
     local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
     local VMPosOffset_Lerp = stable.VMPosOffset_Lerp
-    local state = self:GetState()
+    local state = self:GetState(stable)
     local sprd = self:GetSprintDelta()
 
     if state == ArcCW.STATE_SPRINT and self:SelectAnimation("idle_sprint") and !self:GetReloading() and !self:CanShootWhileSprint() then
@@ -253,7 +253,7 @@ function SWEP:Look_Process(_, EyeAng, _, stable)
     local VMPos, VMAng = stable.VMPos, stable.VMAng
     local VMPosOffset, VMAngOffset = stable.VMPosOffset, stable.VMAngOffset
     local FT = scrunkly()
-    local sightedmult = (self:GetState() == ArcCW.STATE_SIGHTS and 0.25) or 1
+    local sightedmult = (self:GetState(stable) == ArcCW.STATE_SIGHTS and 0.25) or 1
     stable.SmoothEyeAng = LerpAngle(0.05, stable.SmoothEyeAng, EyeAng - stable.LastEyeAng)
     -- local xd, yd = (velocity.z / 10), (velocity.y / 200)
     VMPosOffset.x = -stable.SmoothEyeAng.x * -0.5 * sightedmult * lookxmult
@@ -327,15 +327,15 @@ function SWEP:GetViewModelPosition(pos, ang)
         FT = FT * TargetTick
     end
 
-    local asight = self:GetActiveSights()
-    local state = self:GetState()
+    local stable = self:GetTable()
+    local asight = self:GetActiveSights(stable)
+    local state = self:GetState(stable)
     local sgtd = self:GetSightDelta()
     local sprd = self:GetSprintDelta()
 
-    local stable = self:GetTable()
     local sprinted = stable.Sprinted or state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint()
     local sighted = stable.Sighted or state == ArcCW.STATE_SIGHTS
-    local holstered = self:GetCurrentFiremode().Mode == 0
+    local holstered = self:GetCurrentFiremode(stable).Mode == 0
 
     if issingleplayer then
         sprinted = state == ArcCW.STATE_SPRINT and !self:CanShootWhileSprint()
@@ -343,9 +343,10 @@ function SWEP:GetViewModelPosition(pos, ang)
     end
 
     local oldpos, oldang = Vector(), Angle()
+    local vpang = self:GetOurViewPunchAngles(stable)
     oldpos:Set(pos)
     oldang:Set(ang)
-    ang:Sub(self:GetOurViewPunchAngles())
+    ang:Sub(vpang)
 
     actual = stable.ActualVMData or {
         pos = Vector(),
@@ -669,7 +670,7 @@ function SWEP:GetViewModelPosition(pos, ang)
 
     pos.z = pos.z - actual.down
 
-    ang:Add(self:GetOurViewPunchAngles() * Lerp(sgtd, 1, -1))
+    ang:Add(vpang * Lerp(sgtd, 1, -1))
 
     local gunbone, gbslot = self:GetBuff_Override("LHIK_GunDriver", _, stable)
     local atts = stable.Attachments
@@ -827,7 +828,9 @@ function SWEP:PreDrawViewModel(vm)
     if ArcCW.VM_OverDraw then return end
     if !vm then return end
 
-    if self:GetState() == ArcCW.STATE_CUSTOMIZE then
+    local stable = self:GetTable()
+
+    if self:GetState(stable) == ArcCW.STATE_CUSTOMIZE then
         self:BlurNotWeapon()
     end
 
@@ -839,7 +842,7 @@ function SWEP:PreDrawViewModel(vm)
         ArcCW.ConVars["cheapscopesautoconfig"]:SetBool(false)
     end
 
-    local asight = self:GetActiveSights()
+    local asight = self:GetActiveSights(stable)
 
     if asight and ((ArcCW.ConVars["cheapscopes"]:GetBool() and self:GetSightDelta() < 1 and asight.MagnifiedOptic)
             or (self:GetSightDelta() < 1 and asight.ScopeTexture)) then
@@ -849,7 +852,6 @@ function SWEP:PreDrawViewModel(vm)
         self:FormCheapScope()
     end
 
-    local stable = self:GetTable()
     local coolFOV = stable.CurrentViewModelFOV or stable.ViewModelFOV
 
     if ArcCW.VMInRT then
@@ -860,7 +862,7 @@ function SWEP:PreDrawViewModel(vm)
 
     cam.Start3D(EyePos(), EyeAngles(), self:QuickFOVix(coolFOV), nil, nil, nil, nil, 0.5, 1000)
     cam.IgnoreZ(true)
-    self:DrawCustomModel(false)
+    self:DrawCustomModel(false, nil, nil, stable)
     self:DoLHIK(stable)
 
     if !ArcCW.Overdraw then

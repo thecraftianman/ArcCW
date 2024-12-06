@@ -150,14 +150,14 @@ function SWEP:DoLHIK(stable)
         -- local atttbl = ArcCW.AttachmentTable[k.Installed]
 
         -- if atttbl.LHIKHide then
-        if self:GetBuff_Stat("LHIKHide", i) then
+        if self:GetBuff_Stat("LHIKHide", i, stable) then
             justhide = true
         end
 
         if !k.VElement then continue end
 
         -- if atttbl.LHIK then
-        if self:GetBuff_Stat("LHIK", i) then
+        if self:GetBuff_Stat("LHIK", i, stable) then
             lhik_model = k.VElement.Model
             if k.GodDriver then
                 lhik_anim_model = k.GodDriver.Model
@@ -290,6 +290,8 @@ function SWEP:DoLHIK(stable)
     local eyeang = EyeAngles()
 
     if justhide then
+        local vm_offset = (eyeang:Up() * 12) + (eyeang:Forward() * 12) + (eyeang:Right() * 4)
+
         for _, bone in ipairs(ArcCW.LHIKBones) do
             local vmbone = vm:LookupBone(bone)
 
@@ -300,12 +302,13 @@ function SWEP:DoLHIK(stable)
             if !vmtransform then continue end -- something very bad has happened
 
             local vm_pos = vmtransform:GetTranslation()
-            local vm_ang = vmtransform:GetAngles()
+            --local vm_ang = vmtransform:GetAngles()
 
-            local newtransform = Matrix()
+            --local newtransform = Matrix()
+            local newtranslation = LerpVector(delta, vm_pos, vm_pos - vm_offset)
 
-            newtransform:SetTranslation(LerpVector(delta, vm_pos, vm_pos - (eyeang:Up() * 12) - (eyeang:Forward() * 12) - (eyeang:Right() * 4)))
-            newtransform:SetAngles(vm_ang)
+            vmtransform:SetTranslation(newtranslation)
+            --newtransform:SetAngles(vm_ang)
 
             vm:SetBoneMatrix(vmbone, newtransform)
         end
@@ -346,6 +349,7 @@ function SWEP:DoLHIK(stable)
     local cf = 0
     local gun_driver = self:GetBuff_Override("LHIK_GunDriver", _, stable)
     local lhik_delta = stable.LHIKDelta
+    local vm_offset = (eyeang:Up() * 12) + (eyeang:Forward() * 12) + (eyeang:Right() * 4)
 
     for _, bone in ipairs(ArcCW.LHIKBones) do
         local vmbone = vm:LookupBone(bone)
@@ -365,10 +369,12 @@ function SWEP:DoLHIK(stable)
         local lhik_pos = lhiktransform:GetTranslation()
         local lhik_ang = lhiktransform:GetAngles()
 
-        local newtransform = Matrix()
+        --local newtransform = Matrix()
+        local newtranslation = LerpVector(delta, vm_pos, lhik_pos)
+        local newang = LerpAngle(delta, vm_ang, lhik_ang)
 
-        newtransform:SetTranslation(LerpVector(delta, vm_pos, lhik_pos))
-        newtransform:SetAngles(LerpAngle(delta, vm_ang, lhik_ang))
+        --newtransform:SetTranslation(LerpVector(delta, vm_pos, lhik_pos))
+        --newtransform:SetAngles(LerpAngle(delta, vm_ang, lhik_ang))
 
         local localpos = lhik_model:WorldToLocal(lhik_pos)
 
@@ -384,13 +390,17 @@ function SWEP:DoLHIK(stable)
         lhik_delta[lhikbone] = localpos
 
         if hide_component then
-            local new_pos = newtransform:GetTranslation()
-            newtransform:SetTranslation(LerpVector(stable.Customize_Hide, new_pos, new_pos - (eyeang:Up() * 12) - (eyeang:Forward() * 12) - (eyeang:Right() * 4)))
+            --local new_pos = newtransform:GetTranslation()
+            --newtransform:SetTranslation(LerpVector(stable.Customize_Hide, new_pos, new_pos - vm_offset))
+            newtranslation = LerpVector(stable.Customize_Hide, newtranslation, newtranslation - vm_offset)
         end
 
-        local matrix = newtransform
+        vmtransform:SetTranslation(newtranslation)
+        vmtransform:SetAngles(newang)
 
-        vm:SetBoneMatrix(vmbone, matrix)
+        --local matrix = newtransform
+
+        vm:SetBoneMatrix(vmbone, vmtransform)
 
         -- local vm_pos, vm_ang = vm:GetBonePosition(vmbone)
         -- local lhik_pos, lhik_ang = lhik_model:GetBonePosition(lhikbone)

@@ -855,13 +855,14 @@ function SWEP:SetState(v)
     if !issingleplayer and CLIENT then self.State = v end
 end
 
-function SWEP:GetState(v)
+function SWEP:GetState(stable)
     if !issingleplayer and CLIENT then
-        local state = self.State
+        stable = stable or self:GetTable()
+        local state = stable.State
         if state then return state end
     end
 
-    return self:GetNWState(v)
+    return self:GetNWState()
 end
 
 function SWEP:IsProne()
@@ -888,7 +889,7 @@ function SWEP:BarrelHitWall(stable)
     if !hitwallcache or hitwallcache[2] ~= curtime then
         local offset = self:GetBuff("BarrelOffsetHip", _, _, stable)
 
-        if self:GetState() == ArcCW.STATE_SIGHTS then
+        if self:GetState(stable) == ArcCW.STATE_SIGHTS then
             offset = LerpVector(self:GetSightDelta(), self:GetBuff("BarrelOffsetSighted", _, _, stable), offset)
         end
 
@@ -986,13 +987,14 @@ function SWEP:SetPriorityAnim(v)
     end
 end
 
-function SWEP:GetPriorityAnim()
+function SWEP:GetPriorityAnim(stable)
+    stable = stable or self:GetTable()
     local decide = self:GetNWPriorityAnim() > CurTime()
 
     -- Reloading is always a priority animation
     if !decide then decide = self:GetReloading() end
 
-    self:GetBuff_Hook("Hook_GetPriorityAnim", decide)
+    self:GetBuff_Hook("Hook_GetPriorityAnim", decide, nil, stable)
 
     return decide
 end

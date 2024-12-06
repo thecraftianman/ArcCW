@@ -278,11 +278,11 @@ function SWEP:PrimaryAttack()
                 if shootent then
                     projectiledata.ang = ang2
 
-                    self:DoPrimaryFire(true, projectiledata)
+                    self:DoPrimaryFire(true, projectiledata, stable)
                 else
                     bullet.Dir = ang2:Forward()
 
-                    self:DoPrimaryFire(false, bullet)
+                    self:DoPrimaryFire(false, bullet, stable)
                 end
             end
         elseif shootent then
@@ -298,7 +298,7 @@ function SWEP:PrimaryAttack()
 
             projectiledata.ang = ang
 
-            self:DoPrimaryFire(true, projectiledata)
+            self:DoPrimaryFire(true, projectiledata, stable)
         end
     else
         if !bullet then return end
@@ -313,7 +313,7 @@ function SWEP:PrimaryAttack()
             end
             bullet = self:GetBuff_Hook("Hook_FireBullets", bullet, _, stable) or bullet
 
-            self:DoPrimaryFire(false, bullet)
+            self:DoPrimaryFire(false, bullet, stable)
         end
     end
 
@@ -333,17 +333,17 @@ function SWEP:PrimaryAttack()
 
     self:TakePrimaryAmmo(aps)
 
-    self:DoShootSound()
+    self:DoShootSound(_, _, _, _, stable)
     self:DoPrimaryAnim()
 
-    if self:GetCurrentFiremode().Mode < 0 and self:GetBurstCount() == self:GetBurstLength() then
-        local postburst = (self:GetCurrentFiremode().PostBurstDelay or 0)
+    if self:GetCurrentFiremode(stable).Mode < 0 and self:GetBurstCount() == self:GetBurstLength() then
+        local postburst = (self:GetCurrentFiremode(stable).PostBurstDelay or 0)
         self:SetWeaponOpDelay(CurTime() + postburst * self:GetBuff_Mult("Mult_PostBurstDelay", stable) + self:GetBuff_Add("Add_PostBurstDelay", stable))
     end
 
     if (self:GetIsManualAction()) and !(self.NoLastCycle and self:Clip1() == 0) then
         local fireanim = self:GetBuff_Hook("Hook_SelectFireAnimation", _, _, stable) or self:SelectAnimation("fire")
-        local firedelay = self.Animations[fireanim].MinProgress or 0
+        local firedelay = stable.Animations[fireanim].MinProgress or 0
         self:SetNeedCycle(true)
         self:SetWeaponOpDelay(CurTime() + (firedelay * self:GetBuff_Mult("Mult_CycleTime", stable)))
         self:SetNextPrimaryFire(CurTime() + 0.1)
@@ -359,7 +359,7 @@ function SWEP:PrimaryAttack()
         self:PlayAnimation(anim, 1, true, 0, true)
     end
 
-    if self:GetCurrentFiremode().Mode == 1 then
+    if self:GetCurrentFiremode(stable).Mode == 1 then
         self.LastTriggerTime = -1 -- Cannot fire again until trigger released
         self.LastTriggerDuration = 0
     end
@@ -373,59 +373,60 @@ function SWEP:TryBustDoor(ent, dmg)
     ArcCW.TryBustDoor(ent, dmg)
 end
 
-function SWEP:DoShootSound(sndoverride, dsndoverride, voloverride, pitchoverride)
-    local fsound = self.ShootSound
-    local suppressed = self:GetBuff_Override("Silencer")
+function SWEP:DoShootSound(sndoverride, dsndoverride, voloverride, pitchoverride, stable)
+    stable = stable or self:GetTable()
+    local fsound = stable.ShootSound
+    local suppressed = self:GetBuff_Override("Silencer", _, stable)
 
     if suppressed then
-        fsound = self.ShootSoundSilenced
+        fsound = stable.ShootSoundSilenced
     end
 
-    local firstsound = self.FirstShootSound
+    local firstsound = stable.FirstShootSound
 
     if self:GetBurstCount() == 1 and firstsound then
         fsound = firstsound
 
-        local firstsil = self.FirstShootSoundSilenced
+        local firstsil = stable.FirstShootSoundSilenced
 
         if suppressed then
-            fsound = firstsil and firstsil or self.ShootSoundSilenced
+            fsound = firstsil and firstsil or stable.ShootSoundSilenced
         end
     end
 
-    local lastsound = self.LastShootSound
+    local lastsound = stable.LastShootSound
 
     local clip = self:Clip1()
 
     if clip == 1 and lastsound then
         fsound = lastsound
 
-        local lastsil = self.LastShootSoundSilenced
+        local lastsil = stable.LastShootSoundSilenced
 
         if suppressed then
-            fsound = lastsil and lastsil or self.ShootSoundSilenced
+            fsound = lastsil and lastsil or stable.ShootSoundSilenced
         end
     end
 
-    fsound = self:GetBuff_Hook("Hook_GetShootSound", fsound)
+    fsound = self:GetBuff_Hook("Hook_GetShootSound", fsound, _, stable)
 
-    local distancesound = self.DistantShootSound
+    local distancesound = stable.DistantShootSound
 
     if suppressed then
-        distancesound = self.DistantShootSoundSilenced
+        distancesound = stable.DistantShootSoundSilenced
     end
 
-    distancesound = self:GetBuff_Hook("Hook_GetDistantShootSound", distancesound)
+    distancesound = self:GetBuff_Hook("Hook_GetDistantShootSound", distancesound, _, stable)
 
-    local spv = self.ShootPitchVariation
-    local volume = self.ShootVol
-    local pitch  = self.ShootPitch * math.Rand(1 - spv, 1 + spv) * self:GetBuff_Mult("Mult_ShootPitch")
+    local spv = stable.ShootPitchVariation
+    local volume = stable.ShootVol
+    local pitch  = stable.ShootPitch * math.Rand(1 - spv, 1 + spv) * self:GetBuff_Mult("Mult_ShootPitch", stable)
 
     local v = ArcCW.ConVars["weakensounds"]:GetFloat()
 
     volume = volume - v
 
-    volume = volume * self:GetBuff_Mult("Mult_ShootVol")
+    volume = volume * self:GetBuff_Mult("Mult_ShootVol", stable)
 
     volume = math.Clamp(volume, 51, 149)
     pitch  = math.Clamp(pitch, 0, 255)
@@ -445,7 +446,7 @@ function SWEP:DoShootSound(sndoverride, dsndoverride, voloverride, pitchoverride
         pitch   = pitch,
     }
 
-    self:GetBuff_Hook("Hook_AddShootSound", data)
+    self:GetBuff_Hook("Hook_AddShootSound", data, _, stable)
 end
 
 function SWEP:GetMuzzleVelocity()
@@ -469,39 +470,42 @@ function SWEP:GetMuzzleVelocity()
     return vel
 end
 
-function SWEP:DoPrimaryFire(isent, data)
+function SWEP:DoPrimaryFire(isent, data, stable)
+    stable = stable or self:GetTable()
     local clip = self:Clip1()
+    local owner = self:GetOwner()
+
     if self:HasBottomlessClip() then
-        if !self:GetOwner():IsPlayer() then
+        if !owner:IsPlayer() then
             clip = math.huge
         else
             clip = self:Ammo1()
         end
     end
-    local owner = self:GetOwner()
 
     local shouldphysical = ArcCW.ConVars["bullet_enable"]:GetBool()
 
-    if self.AlwaysPhysBullet or self:GetBuff_Override("Override_AlwaysPhysBullet") then
+    if stable.AlwaysPhysBullet or self:GetBuff_Override("Override_AlwaysPhysBullet", _, stable) then
         shouldphysical = true
     end
 
-    if self.NeverPhysBullet or self:GetBuff_Override("Override_NeverPhysBullet") then
+    if stable.NeverPhysBullet or self:GetBuff_Override("Override_NeverPhysBullet", _, stable) then
         shouldphysical = false
     end
 
     if isent then
-        self:FireRocket(data.ent, data.vel, data.ang, self.PhysBulletDontInheritPlayerVelocity)
+        self:FireRocket(data.ent, data.vel, data.ang, stable.PhysBulletDontInheritPlayerVelocity)
     else
         -- if !issingleplayer and !IsFirstTimePredicted() then return end
         if !IsFirstTimePredicted() then return end
 
         if shouldphysical then
             local tracernum = data.Tracer or 1
-            local phystracer = self:GetBuff_Override("Override_PhysTracerProfile", self.PhysTracerProfile)
-            local lastout = self:GetBuff_Override("Override_TracerFinalMag", self.TracerFinalMag)
-            if lastout >= self:Clip1() then
-                phystracer = self:GetBuff_Override("Override_PhysTracerProfileFinal", self.PhysTracerProfileFinal) or phystracer
+            local phystracer = self:GetBuff_Override("Override_PhysTracerProfile", stable.PhysTracerProfile, stable)
+            local lastout = self:GetBuff_Override("Override_TracerFinalMag", stable.TracerFinalMag, stable)
+
+            if lastout >= clip then
+                phystracer = self:GetBuff_Override("Override_PhysTracerProfileFinal", stable.PhysTracerProfileFinal, stable) or phystracer
             elseif tracernum == 0 or clip % tracernum != 0 then
                 phystracer = 7
             end
@@ -539,12 +543,14 @@ function SWEP:DoPrimaryAnim()
     if anim then self:PlayAnimation(anim, time, true, 0, false) end
 end
 
-function SWEP:DoPenetration(tr, penleft, alreadypenned)
+function SWEP:DoPenetration(tr, penleft, alreadypenned, stable)
+    stable = stable or self:GetTable()
+
     local bullet = {
         Damage = self:GetDamage((tr.HitPos - tr.StartPos):Length() * ArcCW.HUToM),
-        DamageType = self:GetBuff_Override("Override_DamageType") or self.DamageType,
+        DamageType = self:GetBuff_Override("Override_DamageType", _, stable) or stable.DamageType,
         Weapon = self,
-        Penetration = self:GetBuff("Penetration"),
+        Penetration = self:GetBuff("Penetration", _, _, stable),
         Attacker = self:GetOwner(),
         Travelled = (tr.HitPos - tr.StartPos):Length()
     }
@@ -662,8 +668,9 @@ function SWEP:GetDispersion()
     return hip
 end
 
-function SWEP:DoShellEject(atti)
-    local eff = self:GetBuff_Override("Override_ShellEffect") or self.ShellEffect or "arccw_shelleffect"
+function SWEP:DoShellEject(atti, stable)
+    stable = stable or self:GetTable()
+    local eff = self:GetBuff_Override("Override_ShellEffect", _, stable) or stable.ShellEffect or "arccw_shelleffect"
 
     if eff == "NONE" then return end
 
@@ -675,23 +682,25 @@ function SWEP:DoShellEject(atti)
 
     if !owner:IsNPC() then owner:GetViewModel() end
 
-    local att = vm:GetAttachment(atti or self:GetBuff_Override("Override_CaseEffectAttachment") or self.CaseEffectAttachment or 2)
+    local att = vm:GetAttachment(atti or self:GetBuff_Override("Override_CaseEffectAttachment", _, stable) or stable.CaseEffectAttachment or 2)
 
     if !att then return end
 
     local pos, ang = att.Pos, att.Ang
+    local posCorrection = stable.ShellEjectPosCorrection
 
-    if pos and ang and self.ShellEjectPosCorrection then
+    if pos and ang and posCorrection then
         local up = ang:Up()
         local right = ang:Right()
         local forward = ang:Forward()
-        pos = pos + up * self.ShellEjectPosCorrection.z + right * self.ShellEjectPosCorrection.x + forward * self.ShellEjectPosCorrection.y
+
+        pos = pos + up * posCorrection.z + right * posCorrection.x + forward * posCorrection.y
     end
 
     local ed = EffectData()
     ed:SetOrigin(pos)
     ed:SetAngles(ang)
-    ed:SetAttachment(atti or self:GetBuff_Override("Override_CaseEffectAttachment") or self.CaseEffectAttachment or 2)
+    ed:SetAttachment(atti or self:GetBuff_Override("Override_CaseEffectAttachment", _, stable) or stable.CaseEffectAttachment or 2)
     ed:SetScale(1)
     ed:SetEntity(self)
     ed:SetNormal(ang:Forward())
@@ -701,7 +710,7 @@ function SWEP:DoShellEject(atti)
     efov.eff = eff
     efov.fx  = ed
 
-    if self:GetBuff_Hook("Hook_PreDoEffects", efov) == true then return end
+    if self:GetBuff_Hook("Hook_PreDoEffects", efov, _, stable) == true then return end
 
     util.Effect(eff, ed)
 end
@@ -913,6 +922,7 @@ function SWEP:SecondaryAttack()
     return self.Melee2 and self:Bash(true)
 end
 
-function SWEP:CanShootWhileSprint()
-    return ArcCW.ConVars["mult_shootwhilesprinting"]:GetBool() or self:GetBuff_Override("Override_ShootWhileSprint", self.ShootWhileSprint)
+function SWEP:CanShootWhileSprint(stable)
+    stable = stable or self:GetTable()
+    return ArcCW.ConVars["mult_shootwhilesprinting"]:GetBool() or self:GetBuff_Override("Override_ShootWhileSprint", stable.ShootWhileSprint, stable)
 end

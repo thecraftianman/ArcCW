@@ -42,8 +42,9 @@ hook.Add("HUDShouldDraw", "ArcCW_HideHUD", function(name)
 end)
 
 hook.Add("RenderScreenspaceEffects", "ArcCW_ToyTown", function()
-    if !LocalPlayer():IsValid() then return end
-    local wpn = LocalPlayer():GetActiveWeapon()
+    local ply = LocalPlayer()
+    if !ply:IsValid() then return end
+    local wpn = ply:GetActiveWeapon()
     if !IsValid(wpn) then return end
 
     if !wpn.ArcCW then return end
