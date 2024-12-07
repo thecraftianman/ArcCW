@@ -310,7 +310,7 @@ function SWEP:DoLHIK(stable)
             vmtransform:SetTranslation(newtranslation)
             --newtransform:SetAngles(vm_ang)
 
-            vm:SetBoneMatrix(vmbone, newtransform)
+            vm:SetBoneMatrix(vmbone, vmtransform)
         end
     end
 
