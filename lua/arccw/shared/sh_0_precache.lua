@@ -1,13 +1,10 @@
 -- credits : fesiug for some things
 
+local isSingleplayer = game.SinglePlayer()
+
 local function CacheAModel(mdl)
     if SERVER then
-        if util.IsValidModel(tostring(mdl)) then
-            local cmdl = ents.Create("prop_dynamic")
-            cmdl:SetModel(mdl)
-            cmdl:Spawn()
-            cmdl:Remove()
-        end
+        util.IsValidModel(tostring(mdl)) -- apparently isvalidmodel precaches
     else
         util.PrecacheModel(mdl)
     end
@@ -16,8 +13,10 @@ end
 function ArcCW.CacheAttsModels()
     if !ArcCW.AttMdlPrecached then
         print("ArcCW: Starting caching all attachments models assets.")
-        for _, mdl in ipairs(ArcCW.ModelToPrecacheList) do
-            CacheAModel(mdl)
+        for i, mdl in ipairs(ARC9.ModelToPrecacheList) do
+            timer.Simple(i * 0.01, function()
+                CacheAModel(mdl)
+            end)
         end
 
         ArcCW.AttMdlPrecached = true
@@ -65,26 +64,20 @@ local WepPossibleSfx = {
     "RicochetSounds",
 }
 
-local function CacheASound(str)
+local function CacheASound(str, cmdl)
     local ex = string.GetExtensionFromFilename(str)
 
-    if ex == "ogg" or ex == "wav" or ex == "mp3" then
-        if SERVER then
-            local cmdl = ents.Create("prop_dynamic")
-            str = string.Replace(str, "sound\\", "")
-            str = string.Replace(str, "sound/", "" )
+    if SERVER and (ex == "ogg" or ex == "wav" or ex == "mp3") then
+        str = string.Replace(str, "sound\\", "")
+        str = string.Replace(str, "sound/", "" )
+
+        if IsValid(cmdl) then
             cmdl:EmitSound(str, 0, 100, 0.001, CHAN_WEAPON)
-            cmdl:Remove()
-        else
-            local ply = LocalPlayer()
-            if IsValid(ply) then
-                ply:EmitSound(str, 75, 100, 0.001, CHAN_WEAPON)
-            end
         end
     end
 end
 
-function ArcCW.CacheWepSounds(wep, class)
+function ArcCW.CacheWepSounds(wep, class, cmdl)
     if !ArcCW.PrecachedWepSounds[class] then
         local SoundsToPrecacheList = {}
 
@@ -102,7 +95,7 @@ function ArcCW.CacheWepSounds(wep, class)
 
         for i, sfx in ipairs(SoundsToPrecacheList) do
             timer.Simple(i * 0.01, function()
-                CacheASound(sfx)
+                CacheASound(sfx, cmdl or wep)
             end)
         end
 
@@ -126,13 +119,18 @@ function ArcCW.CacheWeaponsModels()
 end
 
 function ArcCW.CacheAllSounds()
+    if isSingleplayer and CLIENT then return end
+    local cmdl
+    if SERVER then cmdl = ents.Create("prop_dynamic") end
+
     for _, wep in ipairs(weapons.GetList()) do
         if weapons.IsBasedOn(wep.ClassName, "arccw_base") and wep.ViewModel then
-            ArcCW.CacheWepSounds(wep, wep.ClassName)
+            ArcCW.CacheWepSounds(wep, wep.ClassName, cmdl)
         end
     end
 
     print("ArcCW: Finished caching all weapon sounds.")
+    if SERVER then timer.Simple(5, function() cmdl:Remove() end) end
 end
 
 timer.Simple(1, function()
