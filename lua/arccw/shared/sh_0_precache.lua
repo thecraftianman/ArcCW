@@ -13,7 +13,7 @@ end
 function ArcCW.CacheAttsModels()
     if !ArcCW.AttMdlPrecached then
         print("ArcCW: Starting caching all attachments models assets.")
-        for i, mdl in ipairs(ARC9.ModelToPrecacheList) do
+        for i, mdl in ipairs(ArcCW.ModelToPrecacheList) do
             timer.Simple(i * 0.01, function()
                 CacheAModel(mdl)
             end)
