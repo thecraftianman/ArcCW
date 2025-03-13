@@ -861,7 +861,7 @@ function SWEP:PreDrawViewModel(vm)
     end
 
     cam.Start3D(EyePos(), EyeAngles(), self:QuickFOVix(coolFOV), nil, nil, nil, nil, 0.5, 1000)
-    cam.IgnoreZ(true)
+    render.DepthRange(0.0, 0.1)
     self:DrawCustomModel(false, nil, nil, stable)
     self:DoLHIK(stable)
 
@@ -884,7 +884,7 @@ function SWEP:PostDrawViewModel()
     render.SetBlend(1)
     cam.End3D()
     cam.Start3D(EyePos(), EyeAngles(), self:QuickFOVix(self.CurrentViewModelFOV or self.ViewModelFOV), nil, nil, nil, nil, 0.5, 1000)
-    cam.IgnoreZ(true)
+    render.DepthRange(0.0, 0.1)
 
     if ArcCW.Overdraw then
         ArcCW.Overdraw = false
