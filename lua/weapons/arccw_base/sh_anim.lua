@@ -234,7 +234,10 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
         stable.Cam_Offset_Ang = Angle(ang)
     end
 
-    self:SetNextIdle(ct + ttime)
+    -- Try to prevent 0 length idle animations from overriding other animations' data
+    if ttime != 0 then
+        self:SetNextIdle(ct + ttime)
+    end
 
     return true
 end
@@ -260,7 +263,7 @@ function SWEP:PlayIdleAnimation(pred, stable)
         end
     end
 
-    if stable.LastAnimKey ~= ianim then
+    if stable.LastAnimKey != ianim then
         ianim = self:GetBuff_Hook("Hook_IdleReset", ianim, _, stable) or ianim
     end
 
@@ -314,7 +317,7 @@ if CLIENT then
         local ent = net.ReadEntity()
         local aseq = net.ReadUInt(16)
         local starttime = net.ReadFloat()
-        if IsValid(ent) and ent ~= LocalPlayer() and ent:IsPlayer() then
+        if IsValid(ent) and ent != LocalPlayer() and ent:IsPlayer() then
             ent:AddVCDSequenceToGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD, aseq, starttime, true )
         end
     end)
