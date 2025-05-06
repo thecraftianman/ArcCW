@@ -61,6 +61,7 @@ function SWEP:ToggleCustomizeHUD(ic)
         self:SetShouldHoldType()
         self:ExitBipod()
         if !noinspect then
+            self.ReadySoundTableHack = true
             self:PlayAnimation(self:SelectAnimation("enter_inspect"), nil, true, nil, nil, true, false)
         end
 
@@ -74,12 +75,12 @@ function SWEP:ToggleCustomizeHUD(ic)
         self:SetShouldHoldType()
 
         if !noinspect then
+            self.ReadySoundTableHack = true
             self:PlayAnimation(self:SelectAnimation("exit_inspect"), nil, true, nil, nil, true, false)
         end
 
         if CLIENT then
             self:CloseCustomizeHUD()
-            -- self:SendAllDetails()
         end
     end
 end

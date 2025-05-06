@@ -1238,8 +1238,6 @@ function SWEP:Attach(slot, attname, silent, noadjust, updatemodel)
     if CLIENT then
         -- we are asking to attach something
 
-        -- self:SendAllDetails()
-
         net.Start("arccw_asktoattach")
         net.WriteUInt(slot, 8)
         net.WriteUInt(atttbl.ID, 24)
@@ -1405,8 +1403,6 @@ function SWEP:Detach(slot, silent, noadjust, nocheck, updatemodel)
     end
 
     if CLIENT then
-        -- self:SendAllDetails()
-
         -- we are asking to detach something
         net.Start("arccw_asktodetach")
         net.WriteUInt(slot, 8)
