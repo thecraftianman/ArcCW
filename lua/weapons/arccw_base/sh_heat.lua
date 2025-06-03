@@ -194,20 +194,22 @@ function SWEP:DoMalfunction(post)
 end
 
 function SWEP:MalfunctionClear()
-
     if self:GetBuff_Override("Override_MalfunctionTakeRound", self.MalfunctionTakeRound) then
         self:TakePrimaryAmmo(self:GetBuff("AmmoPerShot"))
     end
 
     local anim = self:GetMalfunctionAnimation()
+
     if anim then
-        self:PlayAnimation(anim, self:GetBuff_Mult("Mult_MalfunctionFixTime"), true, 0, true)
-        local wait = self:GetAnimKeyTime(anim) - 0.01
-        self:SetTimer(wait,
-        function()
+        local fixMult = self:GetBuff_Mult("Mult_MalfunctionFixTime")
+        local wait = (self:GetAnimKeyTime(anim) * fixMult) - 0.01
+
+        self:PlayAnimation(anim, fixMult, true, 0, true)
+        self:SetTimer(wait, function()
             self:SetMalfunctionJam(false)
             self:PlayIdleAnimation(true)
         end)
+
         return true
     else
         self:SetMalfunctionJam(false)
