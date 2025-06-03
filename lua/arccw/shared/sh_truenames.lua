@@ -20,4 +20,8 @@ hook.Add("ArcCW_OnAttLoad", "ArcCW_TrueNames", function(att)
     if att.TrueName then
         att.PrintName = att.TrueName
     end
+
+    if att.TrueAbbrevName then
+        att.AbbrevName = att.TrueAbbrevName
+    end
 end)
