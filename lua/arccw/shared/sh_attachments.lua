@@ -257,7 +257,7 @@ local function postsetup(wpn)
     end
 end
 
-net.Receive("arccw_networkatts", function(len, ply)
+net.Receive("arccw_networkatts", function()
    local wpn = net.ReadEntity()
     if !IsValid(wpn) then return end
     if !wpn.ArcCW then return end

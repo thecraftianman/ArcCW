@@ -486,8 +486,8 @@ function SWEP:SetupModel(wm, stable)
                 charmmodel:DrawShadow(false)
                 charmmodel:SetupBones()
                 ScaleModel(charmmodel, charmscale)
-                charmmodel:SetSkin(atttbl.CharmSkin or 0)
-                charmmodel:SetBodyGroups(atttbl.CharmBodygroups or "")
+                charmmodel:SetSkin(self:GetBuff_Stat("CharmSkin", i) or 0)
+                charmmodel:SetBodyGroups(self:GetBuff_Stat("CharmBodygroups", i) or "")
 
                 local charmelement = {}
                 charmelement.Model = charmmodel

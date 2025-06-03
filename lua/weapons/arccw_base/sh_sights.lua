@@ -444,7 +444,7 @@ local function ScaleFOVByWidthRatio( fovDegrees, ratio )
 end
 
 function SWEP:QuickFOVix( fov )
-    return ScaleFOVByWidthRatio( fov, (ScrW and ScrW() or 4)/(ScrH and ScrH() or 3)/(4/3) )
+    return ScaleFOVByWidthRatio( fov, (ScrW and ScrW() or 4) / (ScrH and ScrH() or 3) / (4 / 3) )
 end
 
 local fovcvar = GetConVar("fov_desired")
@@ -456,24 +456,26 @@ function SWEP:TranslateFOV(fov)
     --local irons = self:GetActiveSights()
     if !CLIENT then return end
 
+    local stable = self:GetTable()
+
     if CLIENT and ArcCW.ConVars["dev_benchgun"]:GetBool() then
-        currentfov = fov -- self.CurrentFOV = fov
+        currentfov = fov -- stable.CurrentFOV = fov
         currentvmfov = fov
-        self.CurrentViewModelFOV = fov
+        stable.CurrentViewModelFOV = fov
         return fov
     end
 
-    -- self.ApproachFOV = self.ApproachFOV or fov
+    -- stable.ApproachFOV = stable.ApproachFOV or fov
     currentfov = currentfov or fov
-    --local lasttranslate = self.LastTranslateFOV
+    --local lasttranslate = stable.LastTranslateFOV
     local time = UnPredictedCurTime()
 
     -- Only update every tick (this function is called multiple times per tick)
     if lasttranslatefov == time then return currentfov end
     local timed = time - lasttranslatefov
-    lasttranslatefov = time -- self.LastTranslateFOV = time
+    lasttranslatefov = time -- stable.LastTranslateFOV = time
 
-    local vmfov = self.ViewModelFOV
+    local vmfov = stable.ViewModelFOV
     local app_vm = vmfov + self:GetOwner():GetInfoNum("arccw_vm_fov", 0)
     if CLIENT then
         app_vm = app_vm * (LocalPlayer():GetFOV() / fovcvar:GetInt())
@@ -489,7 +491,7 @@ function SWEP:TranslateFOV(fov)
             local addads = math.Clamp(ArcCW.ConVars["vm_add_ads"]:GetFloat() or 0, -2, 14)
             local pfov = fovcvar:GetInt()
 
-            if ArcCW.ConVars["cheapscopes"]:GetBool() and mag > 1 then
+            if mag > 1 and ArcCW.ConVars["cheapscopes"]:GetBool() then
                 local csratio = math.Clamp(ArcCW.ConVars["cheapscopesv2_ratio"]:GetFloat() or 0, 0, 1)
                 fov = (pfov / (asight and asight.Magnification or 1)) / (mag / (1 + csratio * mag) + (addads or 0) / 3)
             else
@@ -509,8 +511,8 @@ function SWEP:TranslateFOV(fov)
 
     currentvmfov = currentvmfov or vmfov
     currentvmfov = math.Approach(currentvmfov, app_vm, timed * 10 * (currentvmfov - app_vm))
-    self.CurrentViewModelFOV = currentvmfov
-    -- self.CurrentFOV = curfov
+    stable.CurrentViewModelFOV = currentvmfov
+    -- stable.CurrentFOV = curfov
 
     return currentfov
 end

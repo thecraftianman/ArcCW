@@ -190,7 +190,7 @@ end
 
 if CLIENT then
 
-net.Receive("arccw_sendbullet", function(len, ply)
+net.Receive("arccw_sendbullet", function()
     local pos = net.ReadVector()
     local ang = net.ReadAngle()
     local vel = net.ReadFloat()
@@ -242,7 +242,7 @@ function ArcCW:DoPhysBullets()
         ArcCW:ProgressPhysBullet(i, deltatime)
         -- On the client, bullets must live for at least one tick so we get to render it
         -- This prevents invisible tracers up close
-        if !i.Dead or (CLIENT and CurTime() - i.StartTime <= engine.TickInterval()) then
+        if !i.Dead or (CLIENT and CurTime() - i.StartTime <= deltatime) then
             table.insert(new, i)
         elseif CLIENT and IsValid(i.CSModel) then
             i.CSModel:Remove()
