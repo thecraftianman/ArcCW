@@ -1051,7 +1051,7 @@ function SWEP:CreateCustomizeHUD()
                             if !ArcCW.ConVars["enable_dropping"]:GetBool() then return end
 
                             net.Start("arccw_asktodrop")
-                                net.WriteUInt(ArcCW.AttachmentTable[spaa.AttName].ID, 24)
+                                net.WriteUInt(ArcCW.AttachmentTable[spaa.AttName].ID, ArcCW.GetBitNecessity())
                             net.SendToServer()
 
                             ArcCW:PlayerTakeAtt(self:GetOwner(), spaa.AttName)

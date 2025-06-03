@@ -100,10 +100,6 @@ function SWEP:Deploy()
         self:RestoreAmmo()
     end
 
-    timer.Simple(0, function()
-        if IsValid(self) then self:SetupModel(false) end
-    end)
-
     if SERVER then
         self:SetupShields()
         -- Networking the weapon at this time is too early - entity is not yet valid on client

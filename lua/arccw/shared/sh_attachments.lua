@@ -296,19 +296,21 @@ net.Receive("arccw_networkatts", function()
     postsetup(wpn)
 end)
 
-net.Receive("arccw_sendattinv", function(len, ply)
-    if !IsValid(LocalPlayer()) then return end -- This might be called before we are valid
-    LocalPlayer().ArcCW_AttInv = {}
+net.Receive("arccw_sendattinv", function()
+    local locPly = LocalPlayer()
+    if !IsValid(locPly) then return end -- This might be called before we are valid
+    locPly.ArcCW_AttInv = {}
 
-    local count = net.ReadUInt(32)
+    local bitNecessity = ArcCW.GetBitNecessity()
+    local count = net.ReadUInt(bitNecessity)
 
-    for i = 1, count do
-        local attid = net.ReadUInt(ArcCW.GetBitNecessity())
-        local acount = net.ReadUInt(32)
+    for _ = 1, count do
+        local attid = net.ReadUInt(bitNecessity)
+        local acount = net.ReadUInt(bitNecessity)
 
         local att = ArcCW.AttachmentIDTable[attid]
 
-        LocalPlayer().ArcCW_AttInv[att] = acount
+        locPly.ArcCW_AttInv[att] = acount
     end
 
     -- This function will not exist until initialized (by having an ArcCW weapon exist)!
@@ -318,7 +320,7 @@ net.Receive("arccw_sendattinv", function(len, ply)
     end
 end)
 
-net.Receive("arccw_sendatthp", function(len, ply)
+net.Receive("arccw_sendatthp", function()
     local wpn = LocalPlayer():GetActiveWeapon()
 
     while net.ReadBool() do
@@ -363,7 +365,7 @@ hook.Add("PlayerSpawn", "ArcCW_SpawnAttInv", function(ply, trans)
     ArcCW:PlayerSendAttInv(ply)
 end)
 
-net.Receive("arccw_rqwpnnet", function(len, ply)
+net.Receive("arccw_rqwpnnet", function(_, ply)
     local wpn = net.ReadEntity()
 
     if !wpn.ArcCW then return end
@@ -372,7 +374,7 @@ net.Receive("arccw_rqwpnnet", function(len, ply)
     wpn:NetworkWeapon(ply)
 end)
 
-net.Receive("arccw_slidepos", function(len, ply)
+net.Receive("arccw_slidepos", function(_, ply)
     local wpn = ply:GetActiveWeapon()
 
     local slot = net.ReadUInt(8)
@@ -386,7 +388,7 @@ net.Receive("arccw_slidepos", function(len, ply)
 end)
 
 
-net.Receive("arccw_togglenum", function(len, ply)
+net.Receive("arccw_togglenum", function(_, ply)
     local wpn = ply:GetActiveWeapon()
 
     local slot = net.ReadUInt(8)
@@ -405,11 +407,11 @@ net.Receive("arccw_togglenum", function(len, ply)
 end)
 
 
-net.Receive("arccw_asktoattach", function(len, ply)
+net.Receive("arccw_asktoattach", function(_, ply)
     local wpn = ply:GetActiveWeapon()
 
     local slot = net.ReadUInt(8)
-    local attid = net.ReadUInt(24)
+    local attid = net.ReadUInt(ArcCW.GetBitNecessity())
 
     local att = ArcCW.AttachmentIDTable[attid]
 
@@ -420,7 +422,7 @@ net.Receive("arccw_asktoattach", function(len, ply)
     wpn:Attach(slot, att)
 end)
 
-net.Receive("arccw_asktodetach", function(len, ply)
+net.Receive("arccw_asktodetach", function(_, ply)
     local wpn = ply:GetActiveWeapon()
 
     local slot = net.ReadUInt(8)
@@ -431,9 +433,8 @@ net.Receive("arccw_asktodetach", function(len, ply)
     wpn:Detach(slot)
 end)
 
-net.Receive("arccw_asktodrop", function(len, ply)
-
-    local attid = net.ReadUInt(24)
+net.Receive("arccw_asktodrop", function(_, ply)
+    local attid = net.ReadUInt(ArcCW.GetBitNecessity())
     local att = ArcCW.AttachmentIDTable[attid]
 
     if ArcCW.ConVars["attinv_free"]:GetBool() then return end
@@ -483,6 +484,7 @@ if SERVER then
         end
 
         local atts = wpn.Attachments
+        local bitNecessity = ArcCW.GetBitNecessity()
 
         for k, _ in ipairs(atts) do
             wpn:Detach(k, true, true, _, true)
@@ -491,7 +493,7 @@ if SERVER then
         atts.BaseClass = nil -- AGHHHHHHHHHH
 
         for k, v in ipairs(atts) do -- SortedPairs
-            local attid = net.ReadUInt(ArcCW.GetBitNecessity())
+            local attid = net.ReadUInt(bitNecessity)
 
             local attname = ArcCW.AttachmentIDTable[attid or 0] or ""
             local atttbl = ArcCW.AttachmentTable[attname]
@@ -522,9 +524,13 @@ if SERVER then
             wpn:RestoreAmmo()
         end
 
-        wpn:NetworkWeapon()
-        wpn:SetupModel(false)
-        wpn:SetupModel(true)
+        timer.Simple(0, function()
+            if IsValid(wpn) then
+                wpn:NetworkWeapon()
+                wpn:SetupModel(false)
+                wpn:SetupModel(true)
+            end
+        end)
 
         net.Start("arccw_applypreset")
             net.WriteEntity(wpn)
@@ -545,15 +551,16 @@ function ArcCW:PlayerSendAttInv(ply)
 
     if !ply.ArcCW_AttInv then return end
 
-    net.Start("arccw_sendattinv")
+    local bitNecessity = ArcCW.GetBitNecessity()
 
-    net.WriteUInt(table.Count(ply.ArcCW_AttInv), 32)
+    net.Start("arccw_sendattinv")
+    net.WriteUInt(table.Count(ply.ArcCW_AttInv), bitNecessity)
 
     for att, count in pairs(ply.ArcCW_AttInv) do
         local atttbl = ArcCW.AttachmentTable[att]
         local attid = atttbl.ID
-        net.WriteUInt(attid, ArcCW.GetBitNecessity())
-        net.WriteUInt(count, 32)
+        net.WriteUInt(attid, bitNecessity)
+        net.WriteUInt(count, bitNecessity)
     end
 
     net.Send(ply)

@@ -1240,7 +1240,7 @@ function SWEP:Attach(slot, attname, silent, noadjust, updatemodel)
 
         net.Start("arccw_asktoattach")
         net.WriteUInt(slot, 8)
-        net.WriteUInt(atttbl.ID, 24)
+        net.WriteUInt(atttbl.ID, ArcCW.GetBitNecessity())
         net.SendToServer()
 
         if !silent then
@@ -1507,20 +1507,21 @@ function SWEP:AdjustAmmo(old_inf)
     self.OldAmmo = self.Primary.Ammo
 end
 
-function SWEP:AdjustAtts()
+function SWEP:AdjustAtts(stable)
+    stable = stable or self:GetTable()
     local old_inf = self:HasInfiniteAmmo()
 
     self:RecalcAllBuffs()
 
     -- Recalculate active elements so dependencies aren't fucked
-    self.ActiveElementCache = nil
+    stable.ActiveElementCache = nil
     self:GetActiveElements(true)
     local modifiedcache = {}
 
     -- Temporarily disable modified cache, since we're building it right now
     MODIFIED_CACHE = false
 
-    for i, k in ipairs(self.Attachments) do
+    for i, k in ipairs(stable.Attachments) do
         if !k.Installed then continue end
         local ok = true
 
@@ -1550,14 +1551,14 @@ function SWEP:AdjustAtts()
         end
     end
 
-    for _, e in pairs(self.AttachmentElements) do
+    for _, e in pairs(stable.AttachmentElements) do
         if !istable(e) then continue end
         for var, _ in pairs(e) do
             modifiedcache[var] = true
         end
     end
 
-    for _, e in pairs(self.Firemodes) do
+    for _, e in pairs(stable.Firemodes) do
         if !istable(e) then continue end
         for var, _ in pairs(e) do
             modifiedcache[var] = true
@@ -1569,9 +1570,10 @@ function SWEP:AdjustAtts()
 
     if SERVER then
         local cs = self:GetCapacity() + self:GetChamberSize()
+        local clip = self:Clip1()
 
-        if self:Clip1() > cs and self:Clip1() != ArcCW.BottomlessMagicNumber then
-            local diff = self:Clip1() - cs
+        if clip > cs and clip != ArcCW.BottomlessMagicNumber then
+            local diff = clip - cs
             self:SetClip1(cs)
 
             local owner = self:GetOwner()
@@ -1580,7 +1582,7 @@ function SWEP:AdjustAtts()
             end
         end
     else
-        local se = self:GetBuff_Override("Override_ShootEntity") or self.ShootEntity
+        local se = self:GetBuff_Override("Override_ShootEntity", nil, stable) or stable.ShootEntity
         if se then
             local path = "arccw/weaponicons/" .. self:GetClass()
             local mat = Material(path)
@@ -1589,16 +1591,16 @@ function SWEP:AdjustAtts()
                 local tex = mat:GetTexture("$basetexture")
                 local texpath = tex:GetName()
 
-                killicon.Add(se, texpath, Color(255, 255, 255))
+                killicon.Add(se, texpath, color_white)
             end
         end
     end
 
-    local ubgl_ammo = self:GetBuff_Override("UBGL_Ammo")
-    local ubgl_clip = self:GetBuff_Override("UBGL_Capacity")
+    local ubgl_ammo = self:GetBuff_Override("UBGL_Ammo", nil, stable)
+    local ubgl_clip = self:GetBuff_Override("UBGL_Capacity", nil, stable)
 
-    self.Secondary.ClipSize = ubgl_clip or -1
-    self.Secondary.Ammo = ubgl_ammo or "none"
+    stable.Secondary.ClipSize = ubgl_clip or -1
+    stable.Secondary.Ammo = ubgl_ammo or "none"
 
     --[[
     if ubgl_clip then
@@ -1615,7 +1617,7 @@ function SWEP:AdjustAtts()
 
     self:RebuildSubSlots()
 
-    local fmt = self:GetBuff_Override("Override_Firemodes", self.Firemodes)
+    local fmt = self:GetBuff_Override("Override_Firemodes", stable.Firemodes, stable)
     fmt["BaseClass"] = nil
 
     local fmi = self:GetFireMode()

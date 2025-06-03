@@ -688,7 +688,7 @@ function SWEP:CreateCustomize2HUD()
                 surface.PlaySound("weapons/arccw/uninstall.wav")
 
                 net.Start("arccw_asktodrop")
-                    net.WriteUInt(ArcCW.AttachmentTable[self2.att].ID, 24)
+                    net.WriteUInt(ArcCW.AttachmentTable[self2.att].ID, ArcCW.GetBitNecessity())
                 net.SendToServer()
 
                 ArcCW:PlayerTakeAtt(self:GetOwner(), self2.att)
