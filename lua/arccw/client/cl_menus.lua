@@ -473,10 +473,10 @@ function ArcCW.GeneratePanelElements(panel, table)
         ["o"] = function(p, d) local cb = p:ComboBox(d.text, d.var) for k, v in pairs(d.choices) do cb:AddChoice(v, k) end return cb end,
         ["d"] = function(p, d)
                 local s = vgui.Create("DSizeToContents", p) s:SetSizeX(false) s:Dock(TOP) s:InvalidateLayout()
-                local l = vgui.Create("DLabel", s) l:SetText(d.text) l:SetTextColor(Color(0, 0, 0)) l:Dock(TOP) l:SetContentAlignment(5)
+                local l = vgui.Create("DLabel", s) l:SetText(d.text) l:Dock(TOP) l:SetContentAlignment(5)
                 local bd = vgui.Create("DBinder", s)
                 if input.LookupBinding(d.var) then bd:SetValue(input.GetKeyCode(input.LookupBinding(d.var))) end
-                bd.OnChange = function(b, k)
+                bd.OnChange = function(_, k)
                     if k and input.GetKeyName(k) then
                         local str = input.LookupKeyBinding(k)
                         if str then

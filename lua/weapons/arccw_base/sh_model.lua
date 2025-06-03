@@ -749,7 +749,7 @@ function SWEP:DrawCustomModel(wm, origin, angle, stable)
     stable = stable or self:GetTable()
     local owner = self:GetOwner()
     local ownervalid = IsValid(owner)
-    local ownervm = ownervalid and owner:GetViewModel() or nil
+    local ownervm = (ownervalid and owner:IsPlayer()) and owner:GetViewModel() or nil
     local weppos = self:GetPos()
     local disttoeye = weppos:DistToSqr(EyePos())
     local visibility = math.pow(ArcCW.ConVars["visibility"]:GetInt(), 2)
