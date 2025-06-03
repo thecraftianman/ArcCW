@@ -180,3 +180,15 @@ ArcCW.LHIKBones = {
     "ValveBiped.Bip01_L_Finger01",
     "ValveBiped.Bip01_L_Finger02"
 }
+
+local clientColor = Color(255, 251, 0)
+local serverColor = Color(0, 183, 255)
+local errorColor = Color(255, 0, 0)
+
+function ArcCW.Print(text, isError)
+    local prefixColor = SERVER and serverColor or clientColor
+    local textColor = isError and errorColor or color_white
+    text = !isError and text or "ERROR! " .. text
+
+    MsgC(prefixColor, "[ArcCW] ", textColor, text, "\n")
+end

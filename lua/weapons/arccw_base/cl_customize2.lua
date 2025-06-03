@@ -261,7 +261,7 @@ function SWEP:GetSlotInstalled(i)
                 installed = self.Attachments[slot2].Installed
                 break
             elseif !self.Attachments[slot2] then
-                print("ERROR! No attachment " .. tostring(slot2))
+                ArcCW.Print("No attachment " .. tostring(slot2), true)
             end
         end
     end
@@ -2271,8 +2271,8 @@ function SWEP:CreateCustomize2HUD()
 
 
                     if developercvar:GetInt() > 0 then
-                        print(dmgmax .. "-" .. dmgmin .. "DMG; range " .. mran .. "/" .. sran)
-                        print("table range: " .. stk_min .. " - " .. stk_max .. " (" .. stk_count .. ")")
+                        ArcCW.Print(dmgmax .. "-" .. dmgmin .. "DMG; range " .. mran .. "/" .. sran)
+                        ArcCW.Print("table range: " .. stk_min .. " - " .. stk_max .. " (" .. stk_count .. ")")
                         PrintTable(self.Infos_Breakpoints)
                     end
                 end

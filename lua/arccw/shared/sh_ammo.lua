@@ -34,7 +34,7 @@ ArcCW.AmmoEntToArcCW = {
 
 function ArcCW:AddGrenadeAmmo()
     if ArcCW.ConVars["equipmentammo"]:GetBool() and !ArcCW.ConVars["equipmentsingleton"]:GetBool() then
-        for i, k in pairs(weapons.GetList()) do
+        for _, k in pairs(weapons.GetList()) do
             local class = k.ClassName
             local wpntbl = weapons.Get(class)
             if !wpntbl.ArcCW then continue end
@@ -48,7 +48,7 @@ function ArcCW:AddGrenadeAmmo()
                     game.AddAmmoType({
                         name = class,
                     })
-                    print("ArcCW adding ammo type " .. class)
+                    ArcCW.Print("Adding ammo type " .. class)
                     if CLIENT then
                         language.Add(class .. "_ammo", wpntbl.PrintName)
                     end

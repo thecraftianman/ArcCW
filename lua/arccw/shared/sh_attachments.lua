@@ -198,7 +198,7 @@ function ArcCW:PlayerGiveAtt(ply, att, amt)
 
     local atttbl = ArcCW.AttachmentTable[att]
 
-    if !atttbl then print("Invalid att " .. att) return end
+    if !atttbl then ArcCW.Print("Invalid att " .. att, true) return end
     if atttbl.Free then return end -- You can't give a free attachment, silly
     if atttbl.AdminOnly and !(ply:IsPlayer() and ply:IsAdmin()) then return false end
 

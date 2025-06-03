@@ -38,7 +38,7 @@ local function ArcCW_CollectGarbage()
     ArcCW.CSModelPile = newpile
 
     if developercvar:GetBool() and removed > 0 then
-        print("[ArcCW] Removed " .. tostring(removed) .. " CSModels")
+        ArcCW.Print("Removed " .. tostring(removed) .. " CSModels.")
     end
 end
 

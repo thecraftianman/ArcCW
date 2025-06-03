@@ -157,7 +157,7 @@ function SWEP:Reload()
     else
         local anim = self:SelectReloadAnimation()
 
-        if !self.Animations[anim] then print("Invalid animation \"" .. anim .. "\"") return end
+        if !self.Animations[anim] then ArcCW.Print("Invalid animation \"" .. anim .. "\"", true) return end
 
         self:PlayAnimation(anim, mult, true, 0, false, nil, true)
 

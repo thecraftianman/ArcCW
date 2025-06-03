@@ -23,7 +23,7 @@ local function SV_ArcCW_CollectGarbage()
     ArcCW.ShieldPropPile = newpile
 
     if developercvar:GetBool() and removed > 0 then
-        print("Removed " .. tostring(removed) .. " Shield Models")
+        ArcCW.Print("Removed " .. tostring(removed) .. " shield models.")
     end
 end
 

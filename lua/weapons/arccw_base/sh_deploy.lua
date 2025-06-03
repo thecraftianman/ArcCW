@@ -206,7 +206,7 @@ function SWEP:Initialize()
             if file.Exists("arccw_incompatible.txt", "DATA") then
                 shouldDo = false
                 local oldTbl = util.JSONToTable(file.Read("arccw_incompatible.txt"))
-                for id, addon in pairs(incompatList) do
+                for id in pairs(incompatList) do
                     if !oldTbl[id] then shouldDo = true break end
                 end
                 if shouldDo then file.Delete("arccw_incompatible.txt") end
@@ -214,7 +214,7 @@ function SWEP:Initialize()
             if shouldDo and !table.IsEmpty(incompatList) then
                 ArcCW.MakeIncompatibleWindow(incompatList)
             elseif !table.IsEmpty(incompatList) then
-                print("ArcCW ignored " .. table.Count(incompatList) .. " incompatible addons. If things break, it's your fault.")
+                ArcCW.Print("Ignored " .. table.Count(incompatList) .. " incompatible addons. If things break, it's your fault.", true)
             end
         end
     end

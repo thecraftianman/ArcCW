@@ -107,7 +107,6 @@ function ArcCW.GetTranslation(phrase, format)
     if ArcCW.LangTable[lang] and ArcCW.LangTable[lang][phrase] then
         local str = ArcCW.LangTable[lang][phrase]
         for i, v in pairs(format or {}) do
-            -- print(i, v)
             str = string.Replace(str, "{" .. i .. "}", v)
         end
         return str
@@ -167,7 +166,7 @@ if CLIENT then
                 for phrase, str in pairs(L) do
                     lang_tbl[phrase] = str
                 end
-                print("Loaded ArcCW cl_language file " .. v .. " with " .. table.Count(L) .. " strings.")
+                ArcCW.Print("Loaded ArcCW cl_language file " .. v .. " with " .. table.Count(L) .. " strings.")
                 L = nil
             elseif exp[#exp] == "en" then
                 -- Always load english as backup
@@ -198,10 +197,10 @@ function ArcCW.LoadLanguages()
         local lang = exp[#exp]
 
         if !lang then
-            print("Failed to load ArcCW language file " .. v .. ", did not get language name (naming convention incorrect?)")
+            ArcCW.Print("Failed to load ArcCW language file " .. v .. ", did not get language name (naming convention incorrect?)", true)
             continue
         elseif !L then
-            print("Failed to load ArcCW language file " .. v .. ", did not get language table")
+            ArcCW.Print("Failed to load ArcCW language file " .. v .. ", did not get language table", true)
             continue
         end
 
@@ -216,7 +215,7 @@ function ArcCW.LoadLanguages()
             end
         end
 
-        print("Loaded ArcCW language file " .. v .. " with " .. table.Count(L) .. " strings.")
+        ArcCW.Print("Loaded ArcCW language file " .. v .. " with " .. table.Count(L) .. " strings.")
         L = nil
         STL = nil
     end

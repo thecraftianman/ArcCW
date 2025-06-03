@@ -513,7 +513,7 @@ function ArcCW:DrawPhysBullets()
         local bulinfo = ArcCW.BulletProfileDict[ArcCW.BulletProfiles[pro] or ""]
 
         if bulinfo == nil then
-            print("Failed to find bullet info for profile " .. tostring(i) .. "!")
+            ArcCW.Print("Failed to find bullet info for profile " .. tostring(i) .. "!", true)
             continue
         end
 

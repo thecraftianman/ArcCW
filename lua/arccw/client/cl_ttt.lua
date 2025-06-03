@@ -360,7 +360,7 @@ function ArcCW.TTT2_LoadClientLangs()
         for phrase, str in pairs(L) do
             LANG.AddToLanguage(lang, phrase, str)
         end
-        print("Loaded ArcCW cl_language file " .. v .. " with " .. table.Count(L) .. " strings for TTT2.")
+        ArcCW.Print("Loaded ArcCW cl_language file " .. v .. " with " .. table.Count(L) .. " strings for TTT2.")
         L = nil
     end
 end

@@ -872,8 +872,8 @@ function SWEP:PreDrawViewModel(vm)
     -- patrol
     if POSTVMDONE == false and POSTVMDONE_TIME <= CurTime() then
         POSTVMDONE_TIME = CurTime() + 1
-        print("[ArcCW] Warning: PostDrawViewModel failed response!! cam.End3D errors may be inbound!! You may have an addon conflict!!")
-        print("[ArcCW] Follow the troubleshooting guide at https://github.com/HaodongMo/ArcCW/wiki/Help-&-Troubleshooting#camend3d-errors")
+        ArcCW.Print("PostDrawViewModel failed response!! cam.End3D errors may be inbound!! You may have an addon conflict!!", true)
+        ArcCW.Print("Follow the troubleshooting guide at https://github.com/HaodongMo/ArcCW/wiki/Help-&-Troubleshooting#camend3d-errors", true)
     end
     POSTVMDONE = false
 end

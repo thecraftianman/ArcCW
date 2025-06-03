@@ -1267,7 +1267,7 @@ function SWEP:CreateCustomizeHUD()
                         installed = self.Attachments[slot].Installed
                         break
                     elseif !self.Attachments[slot] then
-                        print("ERROR! No attachment " .. tostring(slot))
+                        ArcCW.Print("No attachment " .. tostring(slot), true)
                     end
                 end
             end

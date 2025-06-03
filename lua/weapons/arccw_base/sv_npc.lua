@@ -14,8 +14,6 @@ function SWEP:NPC_Initialize()
 
     self:SetClip1(self:GetCapacity() or self.Primary.ClipSize)
 
-    -- print(self:Clip1())
-
     local range = self:GetBuff("Range") / ArcCW.HUToM
 
     if self:GetBuff("DamageMin") >= self:GetBuff("Damage") or (self:GetBuff_Override("Override_ManualAction") or self.ManualAction) and self:GetBuff("Num") == 1 then

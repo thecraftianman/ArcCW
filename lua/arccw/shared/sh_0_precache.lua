@@ -13,7 +13,7 @@ end
 function ArcCW.CacheAttsModels()
     if !ArcCW.AttMdlPrecached then
         local count = 0
-        print("ArcCW: Started caching all attachment models.")
+        ArcCW.Print("Started caching all attachment models.")
 
         for i, mdl in ipairs(ArcCW.ModelToPrecacheList) do
             timer.Simple(i * 0.01, function()
@@ -23,7 +23,7 @@ function ArcCW.CacheAttsModels()
         end
 
         ArcCW.AttMdlPrecached = true
-        print("ArcCW: Done caching " .. tostring(count) .. " attachment models. Pretty heavy isn't it?")
+        ArcCW.Print("Done caching " .. tostring(count) .. " attachment models. Pretty heavy isn't it?")
     end
 end
 
@@ -110,7 +110,7 @@ end
 function ArcCW.CacheWeaponsModels()
     if !ArcCW.WepMdlPrecached then
         local count = 0
-        print("ArcCW: Precaching all weapon models!")
+        ArcCW.Print("Precaching all weapon models!")
 
         for _, wep in ipairs(weapons.GetList()) do
             if weapons.IsBasedOn(wep.ClassName, "arccw_base") and wep.ViewModel then
@@ -120,7 +120,7 @@ function ArcCW.CacheWeaponsModels()
         end
 
         ArcCW.WepMdlPrecached = true
-        print("ArcCW: Finished caching " .. tostring(count) .. " weapon models, pretty heavy!")
+        ArcCW.Print("Finished caching " .. tostring(count) .. " weapon models, pretty heavy!")
     end
 end
 
@@ -129,7 +129,7 @@ function ArcCW.CacheAllSounds()
 
     local count = 0
     local cmdl = SERVER and ents.Create("prop_dynamic") or LocalPlayer()
-    print("ArcCW: Precaching all weapon sounds!")
+    ArcCW.Print("Precaching all weapon sounds!")
 
     for _, wep in ipairs(weapons.GetList()) do
         if weapons.IsBasedOn(wep.ClassName, "arccw_base") and wep.ViewModel then
@@ -138,7 +138,7 @@ function ArcCW.CacheAllSounds()
         end
     end
 
-    print("ArcCW: Finished caching " .. tostring(count) .. " weapon sounds.")
+    ArcCW.Print("Finished caching " .. tostring(count) .. " weapon sounds.")
     if SERVER then timer.Simple(5, function() if IsValid(cmdl) then cmdl:Remove() end end) end
 end
 

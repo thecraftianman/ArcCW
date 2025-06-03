@@ -58,7 +58,7 @@ function SWEP:SetupShields()
 
             local shield = ents.Create("physics_prop")
             if !shield then
-                print("!!! Unable to spawn shield!")
+                ArcCW.Print("Unable to spawn shield!", true)
                 continue
             end
 
@@ -105,7 +105,7 @@ function SWEP:SetupShields()
 
         local shield = ents.Create("physics_prop")
         if !shield then
-            print("!!! Unable to spawn shield!")
+            ArcCW.Print("Unable to spawn shield!", true)
             continue
         end
 
@@ -118,7 +118,7 @@ function SWEP:SetupShields()
         shield:SetCollisionGroup( COLLISION_GROUP_WORLD )
         shield.Weapon = self
         if developercvar:GetBool() then
-            shield:SetColor( Color(0, 0, 0, 255) )
+            shield:SetColor( color_black )
         else
             shield:SetColor( Color(0, 0, 0, 0) )
             shield:SetRenderMode(RENDERMODE_NONE)

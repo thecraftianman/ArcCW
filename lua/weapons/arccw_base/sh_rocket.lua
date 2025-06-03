@@ -7,7 +7,7 @@ function SWEP:FireRocket(ent, vel, ang, dontinheritvel)
 
     local src = self:GetShootSrc()
 
-    if !rocket:IsValid() then print("!!! INVALID ROUND " .. ent) return end
+    if !rocket:IsValid() then ArcCW.Print("INVALID ROUND " .. ent, true) return end
 
     local rocketAng = Angle(ang.p, ang.y, ang.r)
     if ang and self.ShootEntityAngleCorrection then

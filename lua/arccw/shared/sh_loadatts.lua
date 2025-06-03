@@ -77,7 +77,7 @@ local function ArcCW_SendBlacklist(ply)
             ArcCW.AttachmentBlacklistTable = util.JSONToTable(file.Read("arccw_blacklist.txt") or "") or {}
             local curcount = table.Count(ArcCW.AttachmentBlacklistTable)
             VerifyBlacklist()
-            print("Loaded " .. curcount .. " active (" .. curcount .. " total) blacklisted ArcCW attachments.")
+            ArcCW.Print("Loaded " .. curcount .. " active (" .. curcount .. " total) blacklisted ArcCW attachments.")
         end
         if ArcCW.AttachmentBlacklistTable and player.GetCount() > 0 then
             timer.Simple(0, function()
@@ -115,10 +115,10 @@ end
 
 local function ArcCW_LoadFolder(folder)
     folder = folder and (attachments_path .. folder .. "/") or attachments_path
-    for k, v in pairs(file.Find(folder .. "*", "LUA")) do
+    for _, v in pairs(file.Find(folder .. "*", "LUA")) do
         local yaya, yoyo = pcall(function() ArcCW_LoadAtt(folder .. v) end)
         if !yaya then
-            print( "!!!! Attachment " .. v .. " has errors!", yoyo )
+            ArcCW.Print( "Attachment " .. v .. " has errors! " .. yoyo, true )
             -- Create a stub attachment to prevent customization UI freaking out
             ArcCW.AttachmentTable[shortname] = {
                 PrintName = shortname or "ERROR",
@@ -154,11 +154,11 @@ local function ArcCW_LoadAtts()
             AddCSLuaFile(bulk_path .. filename)
         end)
         if !try then
-            print("!!!! Bulk attachment file " .. filename .. " has errors!")
+            ArcCW.Print("Bulk attachment file " .. filename .. " has errors!", true)
         end
     end
 
-    print("Loaded " .. tostring(ArcCW.NumAttachments) .. " ArcCW attachments.")
+    ArcCW.Print("Loaded " .. tostring(ArcCW.NumAttachments) .. " ArcCW attachments.")
 
     if !issingleplayer then
         ArcCW_SendBlacklist()
@@ -168,7 +168,7 @@ local function ArcCW_LoadAtts()
         for i, v in pairs(ArcCW.AttachmentTable) do
             v.Blacklisted = ArcCW.AttachmentBlacklistTable[i]
         end
-        print("Loaded blacklist with " .. table.Count(ArcCW.AttachmentBlacklistTable) .. " attachments.")
+        ArcCW.Print("Loaded blacklist with " .. table.Count(ArcCW.AttachmentBlacklistTable) .. " attachments.")
     end
 
     hook.Run("ArcCW_PostLoadAtts")
@@ -214,7 +214,7 @@ if CLIENT then
         for i, v in pairs(ArcCW.AttachmentTable) do
             v.Blacklisted = ArcCW.AttachmentBlacklistTable[i]
         end
-        print("Received blacklist with " .. table.Count(ArcCW.AttachmentBlacklistTable) .. " attachments.")
+        ArcCW.Print("Received blacklist with " .. table.Count(ArcCW.AttachmentBlacklistTable) .. " attachments.")
     end)
 
     -- Gets around Listen server spawn issues
@@ -236,8 +236,8 @@ elseif SERVER then
     end)
 
     local antiSpam = {}
-    net.Receive("arccw_blacklist", function(len, ply)
 
+    net.Receive("arccw_blacklist", function(_, ply)
         -- If this message is a request to get blacklist, send it and return
         local isRequest = net.ReadBool()
         if isRequest then
@@ -254,7 +254,7 @@ elseif SERVER then
         -- Server receives admin's changes to blacklist table
         local amt = net.ReadUInt(ArcCW.GetBitNecessity())
         ArcCW.AttachmentBlacklistTable = {}
-        for i = 1, amt do
+        for _ = 1, amt do
             local id = net.ReadUInt(ArcCW.GetBitNecessity())
             local attName = ArcCW.AttachmentIDTable[id]
             if attName and ArcCW.AttachmentTable[attName] then
@@ -264,7 +264,7 @@ elseif SERVER then
         for i, k in pairs(ArcCW.AttachmentTable) do
             k.Blacklisted = ArcCW.AttachmentBlacklistTable[i] or false
         end
-        print("Received blacklist with " .. table.Count(ArcCW.AttachmentBlacklistTable) .. " attachments.")
+        ArcCW.Print("Received blacklist with " .. table.Count(ArcCW.AttachmentBlacklistTable) .. " attachments.")
         file.Write("arccw_blacklist.txt", util.TableToJSON(ArcCW.AttachmentBlacklistTable))
         ArcCW_SendBlacklist()
     end)

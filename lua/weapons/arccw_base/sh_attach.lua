@@ -367,7 +367,7 @@ function SWEP:GetBuff_Override(buff, default, stable)
     stable.TickCache_Overrides[buff] = {current, winningslot}
 
     if VERIFY_MODIFIED_CACHE and !stable.ModifiedCache[buff] and current != nil then
-        print("ArcCW: Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(current) .. ")!")
+        ArcCW.Print("Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(current) .. ")!", true)
     end
 
     local data = {
@@ -485,7 +485,7 @@ function SWEP:GetBuff_Mult(buff, stable)
     stable.TickCache_Mults[buff] = mult
 
     if VERIFY_MODIFIED_CACHE and !stable.ModifiedCache[buff] and mult != 1 then
-        print("ArcCW: Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(mult) .. ")!")
+        ArcCW.Print("Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(mult) .. ")!", true)
     end
 
     if ArcCW.ConVar_BuffMults[buff] then
@@ -593,7 +593,7 @@ function SWEP:GetBuff_Add(buff, stable)
     stable.TickCache_Adds[buff] = add
 
     if VERIFY_MODIFIED_CACHE and !stable.ModifiedCache[buff] and add != 0 then
-        print("ArcCW: Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(add) .. ")!")
+        ArcCW.Print("Presumed non-changing buff '" .. buff .. "' is modified (" .. tostring(add) .. ")!", true)
     end
 
     if ArcCW.ConVar_BuffAdds[buff] then
