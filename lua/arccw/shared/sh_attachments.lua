@@ -524,13 +524,9 @@ if SERVER then
             wpn:RestoreAmmo()
         end
 
-        timer.Simple(0, function()
-            if IsValid(wpn) then
-                wpn:NetworkWeapon()
-                wpn:SetupModel(false)
-                wpn:SetupModel(true)
-            end
-        end)
+        wpn:NetworkWeapon()
+        wpn:SetupModel(false)
+        wpn:SetupModel(true)
 
         net.Start("arccw_applypreset")
             net.WriteEntity(wpn)
