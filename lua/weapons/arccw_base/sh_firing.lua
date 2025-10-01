@@ -834,7 +834,7 @@ function SWEP:GetBurstLength()
 end
 
 function SWEP:FireAnimationEvent(pos, ang, event, options)
-    return true
+    if (bit.band(event, 8192) != 0) then return true end
 end
 
 function SWEP:IsRampupWeapon()
