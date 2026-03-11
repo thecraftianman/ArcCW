@@ -42,7 +42,10 @@ function SWEP:ProcessTimers(stable)
 
     stable = stable or self:GetTable()
     local activetimers = stable.ActiveTimers
-    if !activetimers then self:InitTimers() end
+    if !activetimers then
+        self:InitTimers()
+        activetimers = stable.ActiveTimers
+    end
 
     for i = 1, #activetimers do
         local v = activetimers[i]
