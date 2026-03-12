@@ -225,20 +225,20 @@ SWEP.ShootPitch = 100 -- pitch of shoot sound
 SWEP.ShootPitchVariation = 0.05
 
 SWEP.FirstShootSound = nil
-SWEP.ShootSound = ""
+SWEP.ShootSound = "weapons/m4a1/m4a1_unsil-1.wav"
 SWEP.ShootSoundLooping = nil
 SWEP.FirstShootSoundSilenced = nil
 SWEP.ShootDrySound = nil -- Add an attachment hook for Hook_GetShootDrySound please!
 SWEP.DistantShootSound = nil
-SWEP.ShootSoundSilenced = "weapons/arccw/m4a1/m4a1-1.wav"
+SWEP.ShootSoundSilenced = "weapons/m4a1/m4a1-1.wav"
 SWEP.ShootSoundSilencedLooping = nil
 SWEP.FiremodeSound = "weapons/arccw/firemode.wav"
-SWEP.MeleeSwingSound = "weapons/arccw/melee_lift.wav"
-SWEP.MeleeMissSound = "weapons/arccw/melee_miss.wav"
-SWEP.MeleeHitSound = "weapons/arccw/melee_hitworld.wav"
-SWEP.MeleeHitNPCSound = "weapons/arccw/melee_hitbody.wav"
-SWEP.EnterBipodSound = "weapons/arccw/bipod_down.wav"
-SWEP.ExitBipodSound = "weapons/arccw/bipod_up.wav"
+SWEP.MeleeSwingSound = ")weapons/arccw/melee_lift.wav"
+SWEP.MeleeMissSound = ")weapons/arccw/melee_miss.wav"
+SWEP.MeleeHitSound = ")weapons/arccw/melee_hitworld.wav"
+SWEP.MeleeHitNPCSound = ")weapons/arccw/melee_hitbody.wav"
+SWEP.EnterBipodSound = ")weapons/arccw/bipod_down.wav"
+SWEP.ExitBipodSound = ")weapons/arccw/bipod_up.wav"
 SWEP.SelectUBGLSound =  "weapons/arccw/ubgl_select.wav"
 SWEP.ExitUBGLSound = "weapons/arccw/ubgl_exit.wav"
 
@@ -352,7 +352,7 @@ SWEP.MalfunctionPostFire = false -- If set, jam will occur after firing the roun
 SWEP.MalfunctionWait = 0.5 -- The amount of time to wait before playing malfunction animation (or can reload)
 SWEP.MalfunctionMean = nil -- The mean number of shots between malfunctions, will be autocalculated if nil
 SWEP.MalfunctionVariance = 0.25 -- The fraction of mean for variance. e.g. 0.2 means 20% variance
-SWEP.MalfunctionSound = "weapons/arccw/malfunction.wav"
+SWEP.MalfunctionSound = ")weapons/arccw/malfunction.wav"
 
 SWEP.HoldtypeHolstered = "passive"
 SWEP.HoldtypeActive = "shotgun"
