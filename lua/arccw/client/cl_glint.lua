@@ -20,7 +20,7 @@ hook.Add("PostDrawEffects", "ArcCW_ScopeGlint", function()
 
             if wep:GetState() != ArcCW.STATE_SIGHTS then continue end
 
-            local glint = wep:GetBuff_Override("ScopeGlint", _, weptbl)
+            local glint = wep:GetBuff_Override("ScopeGlint", nil, weptbl)
             if !glint then continue end
 
             local plyEyePos = ply:EyePos()
