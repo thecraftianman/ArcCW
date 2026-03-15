@@ -739,7 +739,7 @@ function SWEP:DryFire()
     if self.Animations.fire_dry then
         return self:PlayAnimation("fire_dry", 1, true, 0, true)
     end
-    self:MyEmitSound(self.ShootDrySound or "weapons/arccw/dryfire.wav", 75, 100, 1, CHAN_ITEM)
+    self:MyEmitSound(self.ShootDrySound or ")weapons/arccw/dryfire.wav", 75, 100, 1, CHAN_ITEM)
     self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
