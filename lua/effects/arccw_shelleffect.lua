@@ -64,9 +64,9 @@ function EFFECT:Init(data)
             elseif t == game.GetAmmoID("Buckshot") then
                 self.Sounds = ArcCW.ShotgunShellSoundsTable
             elseif ent.Trivia_Calibre and string.find(ent.Trivia_Calibre, ".22") then
-                self.Sounds = ArcCW.22ShellSoundsTable
+                self.Sounds = ArcCW.TinyShellSoundsTable
             elseif t == game.GetAmmoID("SniperPenetratedRound") then
-                self.Sounds = ArcCW.ShotgunShellSoundsTable
+                self.Sounds = ArcCW.LargeShellSoundsTable
             else
                 self.Sounds = ArcCW.ShellSoundsTable
             end
