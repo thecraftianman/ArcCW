@@ -33,46 +33,87 @@ COND_WEAPON_HAS_LOS = 41
 COND_WEAPON_SIGHT_OCCLUDED = 45
 
 ArcCW.ShellSoundsTable = {
-    "weapons/arccw/casings/casing_556_1.wav",
-    "weapons/arccw/casings/casing_556_2.wav",
-    "weapons/arccw/casings/casing_556_3.wav",
-    "weapons/arccw/casings/casing_556_4.wav"
+    "weapons/arccw/casings/casing_medium_01.wav",
+    "weapons/arccw/casings/casing_medium_02.wav",
+    "weapons/arccw/casings/casing_medium_03.wav",
+    "weapons/arccw/casings/casing_medium_04.wav",
+    "weapons/arccw/casings/casing_medium_05.wav",
+    "weapons/arccw/casings/casing_medium_06.wav",
+    "weapons/arccw/casings/casing_medium_07.wav",
+    "weapons/arccw/casings/casing_medium_08.wav",
+    "weapons/arccw/casings/casing_medium_09.wav",
+    "weapons/arccw/casings/casing_medium_10.wav",
+    "weapons/arccw/casings/casing_medium_11.wav",
+    "weapons/arccw/casings/casing_medium_12.wav"
 }
 
 ArcCW.MediumShellSoundsTable = {
-    "weapons/arccw/casings/casing_308_1.wav",
-    "weapons/arccw/casings/casing_308_2.wav",
-    "weapons/arccw/casings/casing_308_3.wav",
-    "weapons/arccw/casings/casing_308_4.wav"
+    "weapons/arccw/casings/casing_medium_01.wav",
+    "weapons/arccw/casings/casing_medium_02.wav",
+    "weapons/arccw/casings/casing_medium_03.wav",
+    "weapons/arccw/casings/casing_medium_04.wav",
+    "weapons/arccw/casings/casing_medium_05.wav",
+    "weapons/arccw/casings/casing_medium_06.wav",
+    "weapons/arccw/casings/casing_medium_07.wav",
+    "weapons/arccw/casings/casing_medium_08.wav",
+    "weapons/arccw/casings/casing_medium_09.wav",
+    "weapons/arccw/casings/casing_medium_10.wav",
+    "weapons/arccw/casings/casing_medium_11.wav",
+    "weapons/arccw/casings/casing_medium_12.wav"
 }
 
 ArcCW.PistolShellSoundsTable = {
-    "weapons/arccw/casings/casing_9mm_1.wav",
-    "weapons/arccw/casings/casing_9mm_2.wav",
-    "weapons/arccw/casings/casing_9mm_3.wav",
-    "weapons/arccw/casings/casing_9mm_4.wav"
+    "weapons/arccw/casings/casing_small_01.wav",
+    "weapons/arccw/casings/casing_small_02.wav",
+    "weapons/arccw/casings/casing_small_03.wav",
+    "weapons/arccw/casings/casing_small_04.wav",
+    "weapons/arccw/casings/casing_small_05.wav",
+    "weapons/arccw/casings/casing_small_06.wav",
+    "weapons/arccw/casings/casing_small_07.wav",
+    "weapons/arccw/casings/casing_small_08.wav",
+    "weapons/arccw/casings/casing_small_09.wav",
+    "weapons/arccw/casings/casing_small_10.wav",
+    "weapons/arccw/casings/casing_small_11.wav",
+    "weapons/arccw/casings/casing_small_12.wav"
 }
 
 ArcCW.TinyShellSoundsTable = {
-    "weapons/arccw/casings/casing_22_1.wav",
-    "weapons/arccw/casings/casing_22_2.wav",
-    "weapons/arccw/casings/casing_22_3.wav",
-    "weapons/arccw/casings/casing_22_4.wav"
+    "weapons/arccw/casings/casing_22_01.wav",
+    "weapons/arccw/casings/casing_22_02.wav",
+    "weapons/arccw/casings/casing_22_03.wav"
 }
 
 ArcCW.ShotgunShellSoundsTable = {
-    "weapons/arccw/casings/casing_12ga_1.wav",
-    "weapons/arccw/casings/casing_12ga_2.wav",
-    "weapons/arccw/casings/casing_12ga_3.wav",
-    "weapons/arccw/casings/casing_12ga_4.wav"
+    "weapons/arccw/casings/casing_12g_01.wav",
+    "weapons/arccw/casings/casing_12g_02.wav",
+    "weapons/arccw/casings/casing_12g_03.wav",
+    "weapons/arccw/casings/casing_12g_04.wav",
+    "weapons/arccw/casings/casing_12g_05.wav",
+    "weapons/arccw/casings/casing_12g_06.wav",
+    "weapons/arccw/casings/casing_12g_07.wav",
+    "weapons/arccw/casings/casing_12g_08.wav",
+    "weapons/arccw/casings/casing_12g_09.wav",
+    "weapons/arccw/casings/casing_12g_10.wav",
+    "weapons/arccw/casings/casing_12g_11.wav",
+    "weapons/arccw/casings/casing_12g_12.wav"
 }
 
 ArcCW.RicochetSounds = {
-    "weapons/arccw/ricochet01.wav",
-    "weapons/arccw/ricochet02.wav",
-    "weapons/arccw/ricochet03.wav",
-    "weapons/arccw/ricochet04.wav",
-    "weapons/arccw/ricochet05.wav"
+    "weapons/arccw/fx/ricochet_01.wav",
+    "weapons/arccw/fx/ricochet_02.wav",
+    "weapons/arccw/fx/ricochet_03.wav",
+    "weapons/arccw/fx/ricochet_04.wav",
+    "weapons/arccw/fx/ricochet_05.wav",
+    "weapons/arccw/fx/ricochet_06.wav",
+    "weapons/arccw/fx/ricochet_07.wav",
+    "weapons/arccw/fx/ricochet_08.wav",
+    "weapons/arccw/fx/ricochet_09.wav",
+    "weapons/arccw/fx/ricochet_10.wav",
+    "weapons/arccw/fx/ricochet_11.wav",
+    "weapons/arccw/fx/ricochet_12.wav",
+    "weapons/arccw/fx/ricochet_13.wav",
+    "weapons/arccw/fx/ricochet_14.wav",
+    "weapons/arccw/fx/ricochet_15.wav"
  }
 
 ArcCW.ReloadTimeTable = {
