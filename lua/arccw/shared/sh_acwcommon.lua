@@ -42,7 +42,7 @@ ArcCW.SmallShellSoundsTable = {
     "weapons/arccw/casings/casing_small_01.wav",
     "weapons/arccw/casings/casing_small_02.wav",
     "weapons/arccw/casings/casing_small_03.wav",
-    "weapons/arccw/casings/casing_small_04.wav".
+    "weapons/arccw/casings/casing_small_04.wav",
     "weapons/arccw/casings/casing_small_05.wav",
     "weapons/arccw/casings/casing_small_06.wav",
     "weapons/arccw/casings/casing_small_07.wav",
