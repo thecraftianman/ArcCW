@@ -83,13 +83,13 @@ ArcCW.ShotgunShellSoundsTable = {
     "weapons/arccw/casings/shell_12_12.wav"
 }
 
-ArcCW.22ShellSoundsTable = {
+ArcCW.TinyShellSoundsTable = {
     "weapons/arccw/casings/casing_22_01.wav",
     "weapons/arccw/casings/casing_22_02.wav",
     "weapons/arccw/casings/casing_22_03.wav"
 }
 
-ArcCW.50ShellSoundsTable = {
+ArcCW.LargeShellSoundsTable = {
     "weapons/arccw/casings/casing_50_01.wav",
     "weapons/arccw/casings/casing_50_02.wav",
     "weapons/arccw/casings/casing_50_03.wav",
