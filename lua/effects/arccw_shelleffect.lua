@@ -57,14 +57,16 @@ function EFFECT:Init(data)
 
         if self.Sounds == "autocheck" and ent:GetPrimaryAmmoType() then
             local t = ent:GetPrimaryAmmoType()
-            if t == game.GetAmmoID("buckshot") then
+            if t == game.GetAmmoID("Pistol") or t == game.GetAmmoID("357") or t == game.GetAmmoID("AlyxGun") then
+                self.Sounds = ArcCW.SmallShellSoundsTable
+            elseif t == game.GetAmmoID("SMG1") or t == game.GetAmmoID("AR2") then
+                self.Sounds = ArcCW.MediumShellSoundsTable
+            elseif t == game.GetAmmoID("Buckshot") then
                 self.Sounds = ArcCW.ShotgunShellSoundsTable
             elseif ent.Trivia_Calibre and string.find(ent.Trivia_Calibre, ".22") then
-                self.Sounds = ArcCW.TinyShellSoundsTable
-            elseif t == game.GetAmmoID("pistol") or t == game.GetAmmoID("357") or t == game.GetAmmoID("AlyxGun") then
-                self.Sounds = ArcCW.PistolShellSoundsTable
-            elseif t == game.GetAmmoID("ar2") then
-                self.Sounds = ArcCW.MediumShellSoundsTable
+                self.Sounds = ArcCW.22ShellSoundsTable
+            elseif t == game.GetAmmoID("SniperPenetratedRound") then
+                self.Sounds = ArcCW.ShotgunShellSoundsTable
             else
                 self.Sounds = ArcCW.ShellSoundsTable
             end
