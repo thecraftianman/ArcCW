@@ -33,9 +33,18 @@ COND_WEAPON_HAS_LOS = 41
 COND_WEAPON_SIGHT_OCCLUDED = 45
 
 ArcCW.ShellSoundsTable = {
-    "weapons/arccw/casings/casing_default_01.wav",
-    "weapons/arccw/casings/casing_default_02.wav",
-    "weapons/arccw/casings/casing_default_03.wav"
+    "weapons/arccw/casings/casing_medium_01.wav",
+    "weapons/arccw/casings/casing_medium_02.wav",
+    "weapons/arccw/casings/casing_medium_03.wav",
+    "weapons/arccw/casings/casing_medium_04.wav",
+    "weapons/arccw/casings/casing_medium_05.wav",
+    "weapons/arccw/casings/casing_medium_06.wav",
+    "weapons/arccw/casings/casing_medium_07.wav",
+    "weapons/arccw/casings/casing_medium_08.wav",
+    "weapons/arccw/casings/casing_medium_09.wav",
+    "weapons/arccw/casings/casing_medium_10.wav",
+    "weapons/arccw/casings/casing_medium_11.wav",
+    "weapons/arccw/casings/casing_medium_12.wav"
 }
 
 ArcCW.MediumShellSoundsTable = {
