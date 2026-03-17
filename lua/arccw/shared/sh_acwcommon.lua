@@ -38,7 +38,7 @@ ArcCW.ShellSoundsTable = {
     "weapons/arccw/casings/casing_default_03.wav"
 }
 
-ArcCW.SmallShellSoundsTable = {
+ArcCW.PistolShellSoundsTable = {
     "weapons/arccw/casings/casing_small_01.wav",
     "weapons/arccw/casings/casing_small_02.wav",
     "weapons/arccw/casings/casing_small_03.wav",
@@ -87,21 +87,6 @@ ArcCW.TinyShellSoundsTable = {
     "weapons/arccw/casings/casing_22_01.wav",
     "weapons/arccw/casings/casing_22_02.wav",
     "weapons/arccw/casings/casing_22_03.wav"
-}
-
-ArcCW.LargeShellSoundsTable = {
-    "weapons/arccw/casings/casing_50_01.wav",
-    "weapons/arccw/casings/casing_50_02.wav",
-    "weapons/arccw/casings/casing_50_03.wav",
-    "weapons/arccw/casings/casing_50_04.wav",
-    "weapons/arccw/casings/casing_50_05.wav",
-    "weapons/arccw/casings/casing_50_06.wav",
-    "weapons/arccw/casings/casing_50_07.wav",
-    "weapons/arccw/casings/casing_50_08.wav",
-    "weapons/arccw/casings/casing_50_09.wav",
-    "weapons/arccw/casings/casing_50_10.wav",
-    "weapons/arccw/casings/casing_50_11.wav",
-    "weapons/arccw/casings/casing_50_12.wav"
 }
 
 ArcCW.RicochetSounds = {
