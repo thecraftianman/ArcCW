@@ -477,7 +477,7 @@ if SERVER then
     net.Receive("arccw_applypreset", function(_, ply)
         local wpn = net.ReadEntity()
 
-        if wpn:GetOwner() != ply or !wpn.ArcCW then return end
+        if !IsValid(wpn) or wpn:GetOwner() != ply or !wpn.ArcCW then return end
         if ply.ArcCW_DisableAutosave or ply.ArcCW_Sandbox_RandomAtts then
             ply.ArcCW_Sandbox_RandomAtts = nil
             return
