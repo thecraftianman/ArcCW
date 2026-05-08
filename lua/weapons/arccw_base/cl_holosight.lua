@@ -406,7 +406,7 @@ end
 
 function SWEP:FormCheapScope()
     local screen = render.GetRenderTarget()
-
+    if screen and screen:GetName()  == "_rt_resolvedfullframedepth" then return end
     render.CopyTexture( screen, rtmat_spare )
 
     render.PushRenderTarget(screen)
@@ -558,6 +558,9 @@ local defaultdot = Material("arccw/hud/hit_dot.png")
 function SWEP:DrawHolosight(hs, hsm, hsp, asight)
     -- holosight structure
     -- holosight model
+
+    local screen = render.GetRenderTarget()
+    if screen and screen:GetName()  == "_rt_resolvedfullframedepth" then return end
 
     local ref = 32
 
