@@ -123,6 +123,19 @@ local function stopwatch(name)
     sw_start = gb
 end
 ]]
+-- added this to drive the "sights" pose param off sight delta so guns stay visually aimed through reloads
+function SWEP:DoADSPose(vm)
+    vm = vm or self:GetOwner():GetViewModel()
+    if !IsValid(vm) then return end
+
+    local bipoded = self:GetInBipod()
+    self.ADSBipodAnims = m_appor(self.ADSBipodAnims or 0, bipoded and 1 or 0, scrunkly() / 0.5)
+
+    local delta = mth.max(1 - self:GetSightDelta(), self.ADSBipodAnims)
+
+    vm:SetPoseParameter("sights", f_lerp(mth.ease.InOutCubic(delta), 0, 1))
+end
+
 function SWEP:Move_Process(EyePos, EyeAng, velocity, stable)
     stable = stable or self:GetTable()
     local VMPos, VMAng = stable.VMPos, stable.VMAng
