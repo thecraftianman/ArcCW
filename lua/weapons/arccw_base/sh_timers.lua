@@ -1,10 +1,9 @@
 local tbl     = table
 local tbl_ins = tbl.insert
 
-local tick = 0
-
 function SWEP:InitTimers()
     self.ActiveTimers = {} -- { { time, id, func } }
+    self.EventTable = {} -- added this so a re-init can't leave a stale event queue behind
 end
 
 function SWEP:SetTimer(time, callback, id)
@@ -36,9 +35,7 @@ function SWEP:KillTimers()
 end
 
 function SWEP:ProcessTimers(stable)
-    local keeptimers, UCT = {}, CurTime()
-
-    if CLIENT and UCT == tick then return end
+    local keeptimers, UCT = {}, CurTime() -- dropped the old once-per-tick tick guard here since it could skip a whole frame of timers
 
     stable = stable or self:GetTable()
     local activetimers = stable.ActiveTimers
@@ -86,8 +83,6 @@ local function DoShell(wep, data)
 end
 
 function SWEP:PlaySoundTable(soundtable, mult, start, key)
-    --if CLIENT and game.SinglePlayer() then return end
-
     if !next(soundtable) then return end
 
     local owner = self:GetOwner()
@@ -98,48 +93,38 @@ function SWEP:PlaySoundTable(soundtable, mult, start, key)
 
     local ct = CurTime()
     local eventtable = self.EventTable
+    local firsttime = game.SinglePlayer() or IsFirstTimePredicted() -- did this so we can tell a fresh prediction from a re-predicted frame
 
     for _, v in pairs(soundtable) do
-        if table.IsEmpty(v) then continue end
+        if !istable(v) or table.IsEmpty(v) then continue end
+        if !v.t then continue end
 
-        local ttime
-        if v.t then
-            ttime = (v.t * mult) - start
-        else
-            continue
-        end
+        local ttime = (v.t * mult) - start
         if ttime < 0 then continue end
-        --if !(IsValid(self) and IsValid(owner)) then continue end
 
-        local jhon = ct + ttime
+        local when = ct + ttime
 
-        --[[if game.SinglePlayer() then
-            if SERVER then
-                net.Start("arccw_networksound")
-                v.ntttime = ttime
-                net.WriteTable(v)
-                net.WriteEntity(self)
-                net.Send(owner)
-            end
-        end]]
-
-        -- i may go fucking insane
-        if !eventtable[1] then eventtable[1] = {} end
-
-        for i, de in ipairs(eventtable) do
-            if de[jhon] then
-                if !eventtable[i + 1] then
-                    --[[print(CurTime(), "Occupier at " .. i .. ", creating " .. i+1)]]
-                    eventtable[i + 1] = {}
-                    continue
+        -- on re-predicted frames, skip anything the first prediction already queued so the owner can't double a sound
+        if !firsttime then
+            local queued = false
+            for i = 1, #eventtable do
+                local e = eventtable[i]
+                if e.Source == v and e.Time == when then
+                    queued = true
+                    break
                 end
-            else
-                eventtable[i][jhon] = table.Copy(v)
-                eventtable[i][jhon].StartTime = CurTime()
-                eventtable[i][jhon].AnimKey = key
-                -- print(CurTime(), "Clean at " .. i)
             end
+            if queued then continue end
         end
+
+        -- append a flat record; Source is the original subtable so it stays a stable identity for the dedupe above
+        local ev = table.Copy(v)
+        ev.Time = when
+        ev.StartTime = ct
+        ev.AnimKey = key
+        ev.Source = v
+
+        eventtable[#eventtable + 1] = ev
     end
 end
 
@@ -162,9 +147,11 @@ function SWEP:PlayEvent(v)
     end
 
     if v.pp then
+        -- fixed the old undefined-global pp/ppv here (was a latent error that could jam the event loop) and guarded the vm
         local vm = self:GetOwner():GetViewModel()
-
-        vm:SetPoseParameter(pp, ppv)
+        if IsValid(vm) then
+            vm:SetPoseParameter(v.pp, v.ppv or 0)
+        end
     end
 
     v = self:GetBuff_Hook("Hook_PostPlayEvent", v) or v
@@ -175,6 +162,12 @@ if CLIENT then
         local v = net.ReadTable()
         local wep = net.ReadEntity()
 
-        wep.EventTable[CurTime() + v.ntttime] = v
+        -- updated this to the flat format + guard so it matches the new queue and can't error
+        if !IsValid(wep) or !istable(wep.EventTable) then return end
+
+        v.Time = CurTime() + (v.ntttime or 0)
+        v.StartTime = CurTime()
+
+        wep.EventTable[#wep.EventTable + 1] = v
     end)
 end

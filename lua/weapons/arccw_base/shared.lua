@@ -694,9 +694,7 @@ SWEP.BurstCount = 0
 SWEP.AnimQueue = {}
 SWEP.FiremodeIndex = 1
 SWEP.UnReady = true
-SWEP.EventTable = {
-    [1] = {} -- for every overlapping one, a new one is made -- checked to be removed afterwards, except 1
-}
+SWEP.EventTable = {} -- made this a flat queue instead of the old layered table to stop owner sounds getting dropped in mp
 
 SWEP.ProneMod_DisableTransitions = true
 

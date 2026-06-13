@@ -29,18 +29,27 @@ function SWEP:Think()
     local lastanimkey = stable.LastAnimKey
     local lastanimstart = stable.LastAnimStartTime
 
-    for i = 1, #eventtbl do
-        local v = eventtbl[i]
-        for ed, bz in pairs(v) do
-            if ed <= curtime then
-                if bz.AnimKey and (bz.AnimKey != lastanimkey or bz.StartTime != lastanimstart) then
-                    continue
-                end
-                self:PlayEvent(bz)
-                eventtbl[i][ed] = nil
-                --print(CurTime(), "Event completed at " .. i, ed)
-                if table.IsEmpty(v) and i != 1 then eventtbl[i] = nil --[[print(CurTime(), "No more events at " .. i .. ", killing")]] end
+    -- rewrote this as a flat keep/fire pass; due events from an interrupted anim get dropped instead of fired or leaked
+    local ecount = #eventtbl
+
+    if ecount > 0 then
+        local tokeep, tofire = {}, {}
+
+        for read = 1, ecount do
+            local ev = eventtbl[read]
+            local valid = istable(ev) and isnumber(ev.Time)
+
+            if valid and ev.Time > curtime then
+                tokeep[#tokeep + 1] = ev
+            elseif valid and (!ev.AnimKey or (ev.AnimKey == lastanimkey and ev.StartTime == lastanimstart)) then
+                tofire[#tofire + 1] = ev
             end
+        end
+
+        stable.EventTable = tokeep -- publish before firing so a re-entrant queue/error can't corrupt the list mid-iteration
+
+        for i = 1, #tofire do
+            self:PlayEvent(tofire[i])
         end
     end
 
@@ -215,6 +224,8 @@ function SWEP:Think()
     end
 
     if CLIENT and IsValid(vm) then
+        self:DoADSPose(vm) -- added this to pose the gun toward ads every frame, including during reloads
+
         -- TODO: Figure out if this is actually needed for something
         --for i = 1, vm:GetBoneCount() do
             --vm:ManipulateBoneScale(i, vec1)

@@ -383,7 +383,7 @@ function SWEP:ProceduralHolster()
 end
 
 function SWEP:WepSwitchCleanup()
-    -- table.Empty(self.EventTable)
+    table.Empty(self.EventTable) -- cleared the queue on switch so stale events from the old weapon don't survive
     self.InProcDraw = false
     self.InProcHolster = false
 end

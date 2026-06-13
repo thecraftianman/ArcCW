@@ -25,7 +25,10 @@ function SWEP:SelectAnimation(anim, stable)
         anim = anim .. "_bipod"
     end
 
-    if self:GetState(stable) == ArcCW.STATE_CUSTOMIZE and anims[anim .. "_inspect"] and ((CLIENT and !ArcCW.ConVars["noinspect"]:GetBool()) or (SERVER and self:GetOwner():GetInfoNum("arccw_noinspect", 0))) then
+    -- compared the convar against 0 here; the old truthy-number check was always true and desynced anim/sound choice in mp
+    if self:GetState(stable) == ArcCW.STATE_CUSTOMIZE and anims[anim .. "_inspect"]
+            and ((CLIENT and !ArcCW.ConVars["noinspect"]:GetBool())
+              or (SERVER and self:GetOwner():GetInfoNum("arccw_noinspect", 0) == 0)) then
         anim = anim .. "_inspect"
     end
 
@@ -209,7 +212,12 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
         end
     end
 
-    if !(issingleplayer and CLIENT) and (issingleplayer or IsFirstTimePredicted() or stable.ReadySoundTableHack) then
+    -- stamp these before the seq block so anims with no resolvable sequence still tag their sounds and get played
+    stable.LastAnimStartTime = ct
+    stable.LastAnimKey = key
+
+    -- dropped the IsFirstTimePredicted gate here; PlaySoundTable dedupes re-prediction itself now, gating lost owner sounds
+    if !(issingleplayer and CLIENT) then
         self:PlaySoundTable(anim.SoundTable or {}, 1 / mult, startfrom, key)
         stable.ReadySoundTableHack = nil
     end
@@ -218,9 +226,7 @@ function SWEP:PlayAnimation(key, mult, pred, startfrom, tt, _, priority, absolut
         vm:SendViewModelMatchingSequence(seq)
         local dur = vm:SequenceDuration()
         vm:SetPlaybackRate(math.Clamp(dur / (ttime + startfrom), -4, 12))
-        stable.LastAnimStartTime = ct
         stable.LastAnimFinishTime = ct + dur
-        stable.LastAnimKey = key
     end
 
     -- Grabs the current angle of the cam attachment bone and use it as the common offset for all cambone changes.
