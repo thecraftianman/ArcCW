@@ -211,6 +211,7 @@ local ServerPanel = {
             choices = {[-1] = "#arccw.cvar.enable_customization.-1", [0] = "#arccw.cvar.enable_customization.0", [1] = "#arccw.cvar.enable_customization.1"}},
     { type = "c", text = "#arccw.cvar.enable_customization.desc" },
     { type = "b", text = "#arccw.cvar.truenames", var = "arccw_truenames", sv = true },
+    { type = "b", text = "#arccw.cvar.workshopcontent", var = "arccw_workshopcontent", sv = true },
     { type = "b", text = "#arccw.cvar.equipmentammo", var = "arccw_equipmentammo", sv = true },
     { type = "c", text = "#arccw.cvar.equipmentammo.desc" },
     { type = "b", text = "#arccw.cvar.equipmentsingleton", var = "arccw_equipmentsingleton", sv = true },

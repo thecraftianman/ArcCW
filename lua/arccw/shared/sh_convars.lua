@@ -20,6 +20,7 @@ ArcCW.ConVars["npc_replace"] = CreateConVar("arccw_npc_replace", 0, FCVAR_ARCHIV
 ArcCW.ConVars["npc_atts"] = CreateConVar("arccw_npc_atts", 1, FCVAR_ARCHIVE, "Randomly give NPC weapons attachments.")
 
 ArcCW.ConVars["truenames"] = CreateConVar("arccw_truenames", 1, FCVAR_ARCHIVE + FCVAR_REPLICATED, "Use true names instead of fake names, where applicable. Requires restart.")
+ArcCW.ConVars["workshopcontent"] = CreateConVar("arccw_workshopcontent", 1, FCVAR_ARCHIVE + FCVAR_REPLICATED, "Automatically makes clients download the Workshop content. Requires restart.")
 
 ArcCW.ConVars["equipmentammo"] = CreateConVar("arccw_equipmentammo", 1, FCVAR_ARCHIVE + FCVAR_REPLICATED, "Generate unique ammo types for throwables.", 0, 1) -- Automatically assign unique ammo types to each throwable weapon. Prone to running into the ammo type limit.
 ArcCW.ConVars["equipmentsingleton"] = CreateConVar("arccw_equipmentsingleton", 0, FCVAR_ARCHIVE + FCVAR_REPLICATED, "Make grenades and equipment not use ammo, and remove themselves on use.", 0, 1)

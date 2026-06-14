@@ -102,6 +102,11 @@ local function multlinetext(text, maxw, font)
     local x = 0
     surface.SetFont(font)
 
+    if !text then
+        table.insert(content, "missing")
+        return content
+    end
+
     local newlined = string.Split(text, "\n")
 
     for _, line in pairs(newlined) do

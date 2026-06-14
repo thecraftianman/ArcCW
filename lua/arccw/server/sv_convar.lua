@@ -30,3 +30,9 @@ net.Receive("arccw_sendconvar", function(_, ply)
         ArcCW.Print("Changed " .. args[1] .. " to " .. args[2] .. ".")
     end)
 end)
+
+hook.Add("CreateTeams", "ArcCW_WorkshopContent", function()
+    if !ArcCW.ConVars["workshopcontent"]:GetBool() then return end
+
+    resource.AddWorkshop("3744383769")
+end)
