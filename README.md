@@ -2,6 +2,8 @@
 
 Welcome to the ArcCW GitHub page!
 
+This fork aims to retain 100% compatibility with upstream ArcCW and not particularly change its gameplay while adding improvements, significant optimization (about 5-6x faster), and bug fixes.
+
 You are free to contribute by sending pull requests. For bug reports, please create an issue in this repo or reach out on Discord.
 
 [Read the wiki!](https://github.com/HaodongMo/ArcCW/wiki)
